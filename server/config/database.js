@@ -12,11 +12,20 @@ if (process.env.DATABASE_URL) {
   // Use connection string (for Vercel, Railway, Supabase, etc.)
   // Supabase requires SSL, so always enable it for Supabase connections
   const isSupabase = process.env.DATABASE_URL.includes('supabase');
+  
+  // For Supabase, ensure SSL is properly configured
   poolConfig = {
     connectionString: process.env.DATABASE_URL,
     ssl: isSupabase || process.env.DATABASE_URL.includes('sslmode=require') 
-      ? { rejectUnauthorized: false } 
-      : false
+      ? { 
+          rejectUnauthorized: false,
+          require: true 
+        } 
+      : false,
+    // Connection pool settings for serverless
+    max: 20,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 10000,
   };
 } else {
   // Use individual environment variables
@@ -27,7 +36,14 @@ if (process.env.DATABASE_URL) {
     database: process.env.DB_NAME || 'hostel_management',
     password: process.env.DB_PASSWORD || 'postgres',
     port: process.env.DB_PORT || 5432,
-    ssl: isSupabase ? { rejectUnauthorized: false } : false
+    ssl: isSupabase ? { 
+      rejectUnauthorized: false,
+      require: true 
+    } : false,
+    // Connection pool settings
+    max: 20,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 10000,
   };
 }
 
