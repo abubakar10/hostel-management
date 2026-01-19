@@ -98,9 +98,9 @@ const Login = () => {
           </motion.button>
         </form>
 
-        <p className="mt-6 text-center text-sm text-gray-600">
+        {/* <p className="mt-6 text-center text-sm text-gray-600">
           Default: admin / admin123
-        </p>
+        </p> */}
       </motion.div>
     </div>
   )
