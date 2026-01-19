@@ -44,7 +44,32 @@ router.post('/login', async (req, res) => {
   try {
     const { username, password } = req.body;
 
-    const result = await pool.query('SELECT * FROM users WHERE username = $1 OR email = $1', [username]);
+    if (!username || !password) {
+      return res.status(400).json({ error: 'Username and password are required' });
+    }
+
+    // Check database connection first
+    let result;
+    try {
+      result = await pool.query('SELECT * FROM users WHERE username = $1 OR email = $1', [username]);
+    } catch (dbError) {
+      console.error('Database query error:', dbError);
+      // Check if it's a "relation does not exist" error
+      if (dbError.code === '42P01') {
+        return res.status(500).json({ 
+          error: 'Database tables not found. Please run the SQL setup script in Supabase.',
+          details: 'The users table does not exist. Run SUPABASE_SQL_SETUP.sql in Supabase SQL Editor.'
+        });
+      }
+      // Check if it's a connection error
+      if (dbError.code === 'ECONNREFUSED' || dbError.code === 'ENOTFOUND') {
+        return res.status(500).json({ 
+          error: 'Database connection failed. Please check your DATABASE_URL.',
+          details: dbError.message
+        });
+      }
+      throw dbError;
+    }
 
     if (result.rows.length === 0) {
       return res.status(401).json({ error: 'Invalid credentials' });
@@ -75,7 +100,11 @@ router.post('/login', async (req, res) => {
       }
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Login error:', error);
+    res.status(500).json({ 
+      error: error.message || 'Internal server error',
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 });
 

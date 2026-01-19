@@ -22,10 +22,10 @@ if (process.env.DATABASE_URL) {
           require: true 
         } 
       : false,
-    // Connection pool settings for serverless
-    max: 20,
-    idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 10000,
+    // Connection pool settings for serverless (Vercel)
+    max: process.env.NODE_ENV === 'production' ? 2 : 10, // Max 2 connections for Vercel serverless
+    idleTimeoutMillis: process.env.NODE_ENV === 'production' ? 30000 : 0, // Close idle connections faster
+    connectionTimeoutMillis: 10000, // 10 seconds
   };
 } else {
   // Use individual environment variables

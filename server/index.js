@@ -74,9 +74,26 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/hostels', hostelRoutes);
 app.use('/api/users', userRoutes);
 
-// Health check
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', message: 'Server is running' });
+// Health check with database connection test
+app.get('/api/health', async (req, res) => {
+  try {
+    // Test database connection
+    await pool.query('SELECT NOW()');
+    res.json({ 
+      status: 'OK', 
+      message: 'Server is running',
+      database: 'connected'
+    });
+  } catch (error) {
+    console.error('Health check database error:', error);
+    res.status(500).json({ 
+      status: 'ERROR', 
+      message: 'Server is running but database connection failed',
+      database: 'disconnected',
+      error: error.message,
+      code: error.code
+    });
+  }
 });
 
 // Root route for Vercel
