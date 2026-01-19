@@ -109,10 +109,51 @@ app.get('/', (req, res) => {
 // Initialize database
 const initializeDatabase = async () => {
   try {
-    await pool.query('SELECT NOW()');
+    const result = await pool.query('SELECT NOW(), version()');
     console.log('✅ Database connected successfully');
+    console.log('   Current time:', result.rows[0].now);
+    
+    // Test if tables exist
+    const tablesResult = await pool.query(`
+      SELECT COUNT(*) as count 
+      FROM information_schema.tables 
+      WHERE table_schema = 'public'
+    `);
+    console.log(`   Tables found: ${tablesResult.rows[0].count}`);
+    
+    // Check if users table exists
+    const usersTable = await pool.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'users'
+      )
+    `);
+    
+    if (!usersTable.rows[0].exists) {
+      console.warn('⚠️  Warning: users table not found. Run SUPABASE_SQL_SETUP.sql in Supabase SQL Editor.');
+    }
   } catch (error) {
-    console.error('❌ Database connection error:', error);
+    console.error('❌ Database connection error:', error.message);
+    console.error('   Error code:', error.code);
+    
+    if (error.code === 'ENOTFOUND') {
+      console.error('   → DNS resolution failed. Check your DATABASE_URL hostname.');
+    } else if (error.code === 'ECONNREFUSED') {
+      console.error('   → Connection refused. Check host and port in DATABASE_URL.');
+    } else if (error.code === '28P01') {
+      console.error('   → Authentication failed. Check username and password in DATABASE_URL.');
+    } else if (error.code === '42P01') {
+      console.error('   → Table does not exist. Run SUPABASE_SQL_SETUP.sql in Supabase SQL Editor.');
+    } else if (error.code === 'ETIMEDOUT') {
+      console.error('   → Connection timeout. Check your network and DATABASE_URL.');
+    }
+    
+    // Log connection string (masked) for debugging
+    if (process.env.DATABASE_URL) {
+      const maskedUrl = process.env.DATABASE_URL.replace(/:[^:@]+@/, ':****@');
+      console.error('   Connection string:', maskedUrl);
+    }
   }
 };
 
