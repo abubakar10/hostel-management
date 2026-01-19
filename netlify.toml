@@ -1,23 +1,19 @@
 [build]
-  # Base directory for the build
+  # Base directory for the build (client folder)
   base = "client"
   
-  # Build command
-  command = "npm run build"
+  # Build command - install dependencies and build
+  command = "npm install --legacy-peer-deps && npm run build"
   
   # Publish directory (where Vite outputs the build)
-  publish = "client/dist"
+  publish = "dist"
   
   # Environment variables
   [build.environment]
     NODE_VERSION = "20"
     NPM_FLAGS = "--legacy-peer-deps"
 
-# Install command to install dependencies in client folder
-[build.processing]
-  skip_processing = false
-
-# Redirects for SPA
+# Redirects for SPA (React Router)
 [[redirects]]
   from = "/*"
   to = "/index.html"
