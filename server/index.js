@@ -17,6 +17,8 @@ import userRoutes from './routes/users.js';
 dotenv.config();
 
 const app = express();
+
+const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
@@ -52,8 +54,15 @@ const initializeDatabase = async () => {
   }
 };
 
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  initializeDatabase();
-});
+// For Vercel serverless functions
+if (process.env.VERCEL) {
+  // Export for Vercel
+  module.exports = app;
+} else {
+  // Regular server startup
+  app.listen(PORT, () => {
+    console.log(`🚀 Server running on port ${PORT}`);
+    initializeDatabase();
+  });
+}
 
