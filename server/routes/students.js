@@ -1,0 +1,160 @@
+import express from 'express';
+import { pool } from '../config/database.js';
+import { authenticateToken } from '../middleware/auth.js';
+import { setHostelContext } from '../middleware/hostel.js';
+
+const router = express.Router();
+
+// Get all students
+router.get('/', authenticateToken, setHostelContext, async (req, res) => {
+  try {
+    let query = `
+      SELECT s.*, r.room_number, rt.type_name as room_type
+      FROM students s
+      LEFT JOIN rooms r ON s.room_id = r.id
+      LEFT JOIN room_types rt ON r.room_type_id = rt.id
+      WHERE 1=1
+    `;
+    const params = [];
+
+    // Filter by hostel_id if not super admin or if hostel_id is specified
+    if (req.user.role !== 'super_admin' || req.query.hostel_id) {
+      query += ` AND s.hostel_id = $1`;
+      params.push(req.hostelId || req.query.hostel_id);
+    }
+
+    query += ` ORDER BY s.created_at DESC`;
+
+    const result = await pool.query(query, params);
+    res.json(result.rows);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get student by ID
+router.get('/:id', authenticateToken, async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT s.*, r.room_number, rt.type_name as room_type
+      FROM students s
+      LEFT JOIN rooms r ON s.room_id = r.id
+      LEFT JOIN room_types rt ON r.room_type_id = rt.id
+      WHERE s.id = $1
+    `, [req.params.id]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Student not found' });
+    }
+    res.json(result.rows[0]);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Create student
+router.post('/', authenticateToken, setHostelContext, async (req, res) => {
+  try {
+    const {
+      student_id, first_name, last_name, email, phone, address,
+      date_of_birth, gender, course, year_of_study, room_id, status, hostel_id
+    } = req.body;
+
+    // Use provided hostel_id or default to user's hostel
+    const finalHostelId = hostel_id || req.hostelId;
+
+    if (!finalHostelId) {
+      return res.status(400).json({ error: 'Hostel ID is required' });
+    }
+
+    const result = await pool.query(
+      `INSERT INTO students (student_id, first_name, last_name, email, phone, address, 
+       date_of_birth, gender, course, year_of_study, room_id, status, hostel_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+       RETURNING *`,
+      [student_id, first_name, last_name, email, phone, address,
+       date_of_birth, gender, course, year_of_study, room_id, status || 'active', finalHostelId]
+    );
+
+    // Update room occupancy if room_id is provided
+    if (room_id) {
+      await pool.query(
+        'UPDATE rooms SET current_occupancy = current_occupancy + 1 WHERE id = $1',
+        [room_id]
+      );
+    }
+
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    if (error.code === '23505') {
+      return res.status(400).json({ error: 'Student ID or email already exists' });
+    }
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Update student
+router.put('/:id', authenticateToken, async (req, res) => {
+  try {
+    const {
+      first_name, last_name, email, phone, address,
+      date_of_birth, gender, course, year_of_study, room_id, status
+    } = req.body;
+
+    // Get old room_id
+    const oldStudent = await pool.query('SELECT room_id FROM students WHERE id = $1', [req.params.id]);
+    const oldRoomId = oldStudent.rows[0]?.room_id;
+
+    const result = await pool.query(
+      `UPDATE students SET first_name = $1, last_name = $2, email = $3, phone = $4, 
+       address = $5, date_of_birth = $6, gender = $7, course = $8, year_of_study = $9, 
+       room_id = $10, status = $11, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $12 RETURNING *`,
+      [first_name, last_name, email, phone, address, date_of_birth, gender,
+       course, year_of_study, room_id, status, req.params.id]
+    );
+
+    // Update room occupancy
+    if (oldRoomId && oldRoomId !== room_id) {
+      await pool.query(
+        'UPDATE rooms SET current_occupancy = GREATEST(0, current_occupancy - 1) WHERE id = $1',
+        [oldRoomId]
+      );
+    }
+    if (room_id && oldRoomId !== room_id) {
+      await pool.query(
+        'UPDATE rooms SET current_occupancy = current_occupancy + 1 WHERE id = $1',
+        [room_id]
+      );
+    }
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Delete student
+router.delete('/:id', authenticateToken, async (req, res) => {
+  try {
+    const student = await pool.query('SELECT room_id FROM students WHERE id = $1', [req.params.id]);
+    const roomId = student.rows[0]?.room_id;
+
+    await pool.query('DELETE FROM students WHERE id = $1', [req.params.id]);
+
+    // Update room occupancy
+    if (roomId) {
+      await pool.query(
+        'UPDATE rooms SET current_occupancy = GREATEST(0, current_occupancy - 1) WHERE id = $1',
+        [roomId]
+      );
+    }
+
+    res.json({ message: 'Student deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+export default router;
+
