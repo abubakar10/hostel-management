@@ -236,7 +236,7 @@ ON CONFLICT DO NOTHING;
 -- Note: You'll need to hash the password. Use: https://bcrypt-generator.com/
 -- Hash for 'admin123': $2a$10$rOzJqZqZqZqZqZqZqZqZqOqZqZqZqZqZqZqZqZqZqZqZqZqZqZqZq
 INSERT INTO users (username, email, password, role, hostel_id) VALUES
-('admin', 'admin@hostel.com', '$2a$10$rOzJqZqZqZqZqZqZqZqZqOqZqZqZqZqZqZqZqZqZqZqZqZqZqZq', 'super_admin', NULL)
+('admin', 'admin@hostel.com', '$2a$10$6zEIDDhJiKhDDODRiYDaAuaHvKnzLd7EP/n/ycQ1TkH5h2UVcluaG', 'super_admin', NULL)
 ON CONFLICT (username) DO NOTHING;
 
 -- ============================================
