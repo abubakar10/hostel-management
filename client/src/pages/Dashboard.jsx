@@ -60,8 +60,8 @@ const Dashboard = () => {
   const statCards = [
     { icon: Users, label: 'Total Students', value: stats.students, color: 'bg-blue-500' },
     { icon: Home, label: 'Total Rooms', value: stats.rooms, color: 'bg-green-500' },
-    { icon: DollarSign, label: 'Total Revenue', value: `₹${stats.totalFees.toLocaleString()}`, color: 'bg-yellow-500' },
-    { icon: AlertCircle, label: 'Pending Fees', value: `₹${stats.pendingFees.toLocaleString()}`, color: 'bg-red-500' },
+    { icon: DollarSign, label: 'Total Revenue', value: `RS${stats.totalFees.toLocaleString()}`, color: 'bg-yellow-500' },
+    { icon: AlertCircle, label: 'Pending Fees', value: `RS${stats.pendingFees.toLocaleString()}`, color: 'bg-red-500' },
     { icon: AlertCircle, label: 'Open Complaints', value: stats.complaints, color: 'bg-orange-500' },
     { icon: TrendingUp, label: 'Attendance Rate', value: '95%', color: 'bg-purple-500' },
   ]

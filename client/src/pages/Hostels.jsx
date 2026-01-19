@@ -206,7 +206,7 @@ const Hostels = () => {
                     <DollarSign size={16} />
                     Revenue
                   </div>
-                  <p className="text-lg font-bold text-gray-800">₹{stats[hostel.id]?.revenue?.toLocaleString() || 0}</p>
+                  <p className="text-lg font-bold text-gray-800">RS{stats[hostel.id]?.revenue?.toLocaleString() || 0}</p>
                 </div>
               </div>
             </motion.div>

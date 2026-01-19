@@ -114,19 +114,19 @@ const Fees = () => {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="card">
           <p className="text-gray-600 text-sm mb-1">Total Fees</p>
-          <p className="text-2xl font-bold text-gray-800">₹{stats.total.toLocaleString()}</p>
+          <p className="text-2xl font-bold text-gray-800">RS{stats.total.toLocaleString()}</p>
         </div>
         <div className="card">
           <p className="text-gray-600 text-sm mb-1">Paid</p>
-          <p className="text-2xl font-bold text-green-600">₹{stats.paid.toLocaleString()}</p>
+          <p className="text-2xl font-bold text-green-600">RS{stats.paid.toLocaleString()}</p>
         </div>
         <div className="card">
           <p className="text-gray-600 text-sm mb-1">Pending</p>
-          <p className="text-2xl font-bold text-yellow-600">₹{stats.pending.toLocaleString()}</p>
+          <p className="text-2xl font-bold text-yellow-600">RS{stats.pending.toLocaleString()}</p>
         </div>
         <div className="card">
           <p className="text-gray-600 text-sm mb-1">Overdue</p>
-          <p className="text-2xl font-bold text-red-600">₹{stats.overdue.toLocaleString()}</p>
+          <p className="text-2xl font-bold text-red-600">RS{stats.overdue.toLocaleString()}</p>
         </div>
       </div>
 
@@ -189,7 +189,7 @@ const Fees = () => {
                         {fee.fee_type}
                       </span>
                     </td>
-                    <td className="table-cell font-semibold">₹{parseFloat(fee.amount).toLocaleString()}</td>
+                    <td className="table-cell font-semibold">RS{parseFloat(fee.amount).toLocaleString()}</td>
                     <td className="table-cell">{new Date(fee.due_date).toLocaleDateString()}</td>
                     <td className="table-cell">
                       {fee.paid_date ? new Date(fee.paid_date).toLocaleDateString() : '-'}
@@ -345,7 +345,7 @@ const Fees = () => {
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Amount:</span>
-                <span className="font-bold text-lg">₹{parseFloat(selectedReceipt.amount).toLocaleString()}</span>
+                <span className="font-bold text-lg">RS{parseFloat(selectedReceipt.amount).toLocaleString()}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Paid Date:</span>

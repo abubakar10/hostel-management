@@ -225,7 +225,7 @@ const Staff = () => {
                     </td>
                     <td className="table-cell">{staffMember.shift || 'N/A'}</td>
                     <td className="table-cell">
-                      {staffMember.salary ? `₹${parseFloat(staffMember.salary).toLocaleString()}` : 'N/A'}
+                      {staffMember.salary ? `RS${parseFloat(staffMember.salary).toLocaleString()}` : 'N/A'}
                     </td>
                     <td className="table-cell">
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${

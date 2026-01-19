@@ -298,7 +298,7 @@ const Rooms = () => {
                     <option value="">Select Room Type</option>
                     {roomTypes.map(type => (
                       <option key={type.id} value={type.id}>
-                        {type.type_name} - Capacity: {type.capacity} - ₹{type.price_per_month}/month
+                        {type.type_name} - Capacity: {type.capacity} - RS{type.price_per_month}/month
                       </option>
                     ))}
                   </select>

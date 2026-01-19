@@ -101,19 +101,19 @@ const Reports = () => {
             <div className="bg-green-50 p-4 rounded-lg">
               <p className="text-sm text-gray-600 mb-1">Hostel Income</p>
               <p className="text-2xl font-bold text-green-600">
-                ₹{parseFloat(incomeExpenses.income.hostel_income || 0).toLocaleString()}
+                RS{parseFloat(incomeExpenses.income.hostel_income || 0).toLocaleString()}
               </p>
             </div>
             <div className="bg-blue-50 p-4 rounded-lg">
               <p className="text-sm text-gray-600 mb-1">Mess Income</p>
               <p className="text-2xl font-bold text-blue-600">
-                ₹{parseFloat(incomeExpenses.income.mess_income || 0).toLocaleString()}
+                RS{parseFloat(incomeExpenses.income.mess_income || 0).toLocaleString()}
               </p>
             </div>
             <div className="bg-red-50 p-4 rounded-lg">
               <p className="text-sm text-gray-600 mb-1">Total Expenses</p>
               <p className="text-2xl font-bold text-red-600">
-                ₹{incomeExpenses.net.total_expenses.toLocaleString()}
+                RS{incomeExpenses.net.total_expenses.toLocaleString()}
               </p>
             </div>
             <div className={`p-4 rounded-lg ${
@@ -125,7 +125,7 @@ const Reports = () => {
                 incomeExpenses.net.total_income - incomeExpenses.net.total_expenses >= 0
                   ? 'text-green-600' : 'text-red-600'
               }`}>
-                ₹{(incomeExpenses.net.total_income - incomeExpenses.net.total_expenses).toLocaleString()}
+                RS{(incomeExpenses.net.total_income - incomeExpenses.net.total_expenses).toLocaleString()}
               </p>
             </div>
           </div>
@@ -140,7 +140,7 @@ const Reports = () => {
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="month" tickFormatter={(value) => monthNames[value - 1]} />
             <YAxis />
-            <Tooltip formatter={(value) => `₹${value.toLocaleString()}`} />
+            <Tooltip formatter={(value) => `RS${value.toLocaleString()}`} />
             <Legend />
             <Line type="monotone" dataKey="income" stroke="#10b981" strokeWidth={2} name="Income" />
             <Line type="monotone" dataKey="expenses" stroke="#ef4444" strokeWidth={2} name="Expenses" />
@@ -169,7 +169,7 @@ const Reports = () => {
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Pie>
-              <Tooltip formatter={(value) => `₹${value.toLocaleString()}`} />
+              <Tooltip formatter={(value) => `RS${value.toLocaleString()}`} />
             </PieChart>
           </ResponsiveContainer>
         </div>
@@ -192,7 +192,7 @@ const Reports = () => {
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Pie>
-              <Tooltip formatter={(value) => `₹${value.toLocaleString()}`} />
+              <Tooltip formatter={(value) => `RS${value.toLocaleString()}`} />
             </PieChart>
           </ResponsiveContainer>
         </div>
@@ -206,7 +206,7 @@ const Reports = () => {
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="month" tickFormatter={(value) => monthNames[value - 1]} />
             <YAxis />
-            <Tooltip formatter={(value) => `₹${value.toLocaleString()}`} />
+            <Tooltip formatter={(value) => `RS${value.toLocaleString()}`} />
             <Legend />
             <Bar dataKey="income" fill="#10b981" name="Income" />
             <Bar dataKey="expenses" fill="#ef4444" name="Expenses" />
