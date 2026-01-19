@@ -17,8 +17,6 @@ import userRoutes from './routes/users.js';
 dotenv.config();
 
 const app = express();
-
-const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
@@ -44,6 +42,16 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'Server is running' });
 });
 
+// Root route for Vercel
+app.get('/', (req, res) => {
+  res.json({ 
+    status: 'OK', 
+    message: 'Hostel Management System API',
+    version: '1.0.0',
+    endpoints: '/api/health, /api/auth, /api/students, etc.'
+  });
+});
+
 // Initialize database
 const initializeDatabase = async () => {
   try {
@@ -54,15 +62,16 @@ const initializeDatabase = async () => {
   }
 };
 
-// For Vercel serverless functions
-if (process.env.VERCEL) {
-  // Export for Vercel
-  module.exports = app;
-} else {
-  // Regular server startup
+// Export app for Vercel serverless
+export default app;
+
+// Start server if not in Vercel environment
+if (!process.env.VERCEL) {
   app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
     initializeDatabase();
   });
+} else {
+  // Initialize database connection for Vercel
+  initializeDatabase();
 }
-
