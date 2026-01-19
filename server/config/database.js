@@ -12,17 +12,24 @@ if (process.env.DATABASE_URL) {
   // Use connection string (for Vercel, Railway, Supabase, etc.)
   const isSupabase = process.env.DATABASE_URL.includes('supabase');
   const isPooler = process.env.DATABASE_URL.includes('pooler.supabase.com');
-  const hasSSLMode = process.env.DATABASE_URL.includes('sslmode=');
   
-  // For Supabase (especially pooler), ensure SSL is properly configured
-  // Supabase pooler requires SSL but the connection string may already include sslmode
+  // For Supabase, we need to handle SSL certificates properly
+  // Supabase uses self-signed certificates, so we must disable certificate validation
   let sslConfig = false;
   
+  // Parse connection string - remove sslmode parameter to handle SSL via config
+  let connectionString = process.env.DATABASE_URL;
+  
+  // Remove sslmode from connection string - we'll handle SSL via config object
+  // This prevents conflicts between URL parameters and config object
+  connectionString = connectionString.replace(/[?&]sslmode=[^&]*/g, '');
+  
   if (isSupabase) {
-    // Supabase always requires SSL
-    // If sslmode is in the URL, we still need to set ssl object for node-postgres
+    // Supabase requires SSL but uses self-signed certificates
+    // We MUST set rejectUnauthorized: false to allow self-signed certs
+    // Using an object with rejectUnauthorized: false is the correct way
     sslConfig = {
-      rejectUnauthorized: false, // Supabase uses self-signed certificates
+      rejectUnauthorized: false, // Critical: allows self-signed certificates from Supabase
     };
     
     // Log connection type for debugging
@@ -31,15 +38,19 @@ if (process.env.DATABASE_URL) {
     } else {
       console.log('🔗 Using Supabase Direct Connection');
     }
-  } else if (hasSSLMode) {
-    // Other providers with SSL in connection string
+    console.log('🔒 SSL: rejectUnauthorized=false (allowing self-signed certs)');
+  } else if (process.env.DATABASE_URL.includes('sslmode=require') || 
+             process.env.DATABASE_URL.includes('ssl=true')) {
+    // Other providers with SSL requirement
     sslConfig = {
       rejectUnauthorized: false,
     };
   }
   
   poolConfig = {
-    connectionString: process.env.DATABASE_URL,
+    connectionString: connectionString,
+    // CRITICAL: SSL config must be set as an object for Supabase
+    // The ssl object overrides any SSL settings in the connection string
     ssl: sslConfig,
     // Connection pool settings for serverless (Vercel)
     max: process.env.NODE_ENV === 'production' ? 2 : 10, // Max 2 connections for Vercel serverless
