@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "description": "Complete Hostel Management System",
   "main": "server/index.js",
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=9.0.0"
+  },
   "scripts": {
     "dev": "concurrently \"npm run server\" \"npm run client\"",
     "server": "cd server && npm run dev",

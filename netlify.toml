@@ -1,0 +1,25 @@
+[build]
+  # Base directory for the build
+  base = "client"
+  
+  # Build command
+  command = "npm run build"
+  
+  # Publish directory (where Vite outputs the build)
+  publish = "client/dist"
+  
+  # Environment variables
+  [build.environment]
+    NODE_VERSION = "20"
+    NPM_FLAGS = "--legacy-peer-deps"
+
+# Install command to install dependencies in client folder
+[build.processing]
+  skip_processing = false
+
+# Redirects for SPA
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
