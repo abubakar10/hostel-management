@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import axios from 'axios'
+import api from '../config/api'
 import { motion } from 'framer-motion'
 import { Plus, Edit, Trash2, UserPlus, Shield, Building2 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
@@ -26,7 +26,7 @@ const Users = () => {
 
   const fetchUsers = async () => {
     try {
-      const response = await axios.get('/api/users')
+      const response = await api.get('/api/users')
       setUsers(response.data)
     } catch (error) {
       console.error('Error fetching users:', error)
@@ -37,7 +37,7 @@ const Users = () => {
 
   const fetchHostels = async () => {
     try {
-      const response = await axios.get('/api/hostels')
+      const response = await api.get('/api/hostels')
       setHostels(response.data)
     } catch (error) {
       console.error('Error fetching hostels:', error)
@@ -54,9 +54,9 @@ const Users = () => {
       }
 
       if (editingUser) {
-        await axios.put(`/api/users/${editingUser.id}`, submitData)
+        await api.put(`/api/users/${editingUser.id}`, submitData)
       } else {
-        await axios.post('/api/users', submitData)
+        await api.post('/api/users', submitData)
       }
       fetchUsers()
       setShowModal(false)
@@ -71,7 +71,7 @@ const Users = () => {
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this user?')) {
       try {
-        await axios.delete(`/api/users/${id}`)
+        await api.delete(`/api/users/${id}`)
         fetchUsers()
       } catch (error) {
         alert(error.response?.data?.error || 'Error deleting user')

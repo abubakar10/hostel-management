@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import axios from 'axios'
+import api from '../config/api'
 import { motion } from 'framer-motion'
 import { Plus, Edit, Trash2, Building2, Users, Home, DollarSign } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
@@ -27,12 +27,12 @@ const Hostels = () => {
 
   const fetchHostels = async () => {
     try {
-      const response = await axios.get('/api/hostels')
+      const response = await api.get('/api/hostels')
       setHostels(response.data)
       
       // Fetch stats for each hostel
       const statsPromises = response.data.map(hostel => 
-        axios.get(`/api/hostels/${hostel.id}/stats`).then(r => ({ id: hostel.id, ...r.data }))
+        api.get(`/api/hostels/${hostel.id}/stats`).then(r => ({ id: hostel.id, ...r.data }))
       )
       const statsData = await Promise.all(statsPromises)
       const statsMap = {}
@@ -51,9 +51,9 @@ const Hostels = () => {
     e.preventDefault()
     try {
       if (editingHostel) {
-        await axios.put(`/api/hostels/${editingHostel.id}`, formData)
+        await api.put(`/api/hostels/${editingHostel.id}`, formData)
       } else {
-        await axios.post('/api/hostels', formData)
+        await api.post('/api/hostels', formData)
       }
       fetchHostels()
       setShowModal(false)
@@ -66,7 +66,7 @@ const Hostels = () => {
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this hostel? This will delete all associated data!')) {
       try {
-        await axios.delete(`/api/hostels/${id}`)
+        await api.delete(`/api/hostels/${id}`)
         fetchHostels()
       } catch (error) {
         alert(error.response?.data?.error || 'Error deleting hostel')

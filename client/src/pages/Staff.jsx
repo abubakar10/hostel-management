@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import axios from 'axios'
+import api from '../config/api'
 import { motion } from 'framer-motion'
 import { Plus, Edit, Trash2, Search, UserCog, Users, Shield } from 'lucide-react'
 
@@ -30,7 +30,7 @@ const Staff = () => {
   const fetchStaff = async () => {
     try {
       const params = filter !== 'all' ? { role: filter } : {}
-      const response = await axios.get('/api/staff', { params })
+      const response = await api.get('/api/staff', { params })
       setStaff(response.data)
     } catch (error) {
       console.error('Error fetching staff:', error)
@@ -43,9 +43,9 @@ const Staff = () => {
     e.preventDefault()
     try {
       if (editingStaff) {
-        await axios.put(`/api/staff/${editingStaff.id}`, formData)
+        await api.put(`/api/staff/${editingStaff.id}`, formData)
       } else {
-        await axios.post('/api/staff', formData)
+        await api.post('/api/staff', formData)
       }
       fetchStaff()
       setShowModal(false)
@@ -58,7 +58,7 @@ const Staff = () => {
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this staff member?')) {
       try {
-        await axios.delete(`/api/staff/${id}`)
+        await api.delete(`/api/staff/${id}`)
         fetchStaff()
       } catch (error) {
         alert(error.response?.data?.error || 'Error deleting staff member')

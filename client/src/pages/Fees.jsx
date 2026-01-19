@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import axios from 'axios'
+import api from '../config/api'
 import { motion } from 'framer-motion'
 import { Plus, Search, DollarSign, CheckCircle, XCircle, FileText } from 'lucide-react'
 
@@ -28,7 +28,7 @@ const Fees = () => {
   const fetchFees = async () => {
     try {
       const params = filter !== 'all' ? { status: filter } : {}
-      const response = await axios.get('/api/fees', { params })
+      const response = await api.get('/api/fees', { params })
       setFees(response.data)
     } catch (error) {
       console.error('Error fetching fees:', error)
@@ -39,7 +39,7 @@ const Fees = () => {
 
   const fetchStudents = async () => {
     try {
-      const response = await axios.get('/api/students')
+      const response = await api.get('/api/students')
       setStudents(response.data.filter(s => s.status === 'active'))
     } catch (error) {
       console.error('Error fetching students:', error)
@@ -49,7 +49,7 @@ const Fees = () => {
   const handleSubmit = async (e) => {
     e.preventDefault()
     try {
-      await axios.post('/api/fees', formData)
+      await api.post('/api/fees', formData)
       fetchFees()
       setShowModal(false)
       setFormData({
@@ -66,7 +66,7 @@ const Fees = () => {
 
   const handleMarkPaid = async (fee) => {
     try {
-      await axios.put(`/api/fees/${fee.id}`, {
+      await api.put(`/api/fees/${fee.id}`, {
         status: 'paid',
         paid_date: new Date().toISOString().split('T')[0],
         payment_method: 'cash'

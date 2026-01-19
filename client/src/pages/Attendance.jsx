@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import axios from 'axios'
+import api from '../config/api'
 import { motion } from 'framer-motion'
 import { Calendar, CheckCircle, XCircle, Clock, Download } from 'lucide-react'
 import { format } from 'date-fns'
@@ -24,7 +24,7 @@ const Attendance = () => {
 
   const fetchStudents = async () => {
     try {
-      const response = await axios.get('/api/students')
+      const response = await api.get('/api/students')
       setStudents(response.data.filter(s => s.status === 'active'))
     } catch (error) {
       console.error('Error fetching students:', error)
@@ -34,7 +34,7 @@ const Attendance = () => {
   const fetchDailyAttendance = async () => {
     setLoading(true)
     try {
-      const response = await axios.get(`/api/attendance/daily/${selectedDate}`)
+      const response = await api.get(`/api/attendance/daily/${selectedDate}`)
       setAttendance(response.data)
     } catch (error) {
       console.error('Error fetching attendance:', error)
@@ -47,7 +47,7 @@ const Attendance = () => {
     setLoading(true)
     try {
       const [year, month] = selectedMonth.split('-')
-      const response = await axios.get(`/api/attendance/monthly/${year}/${month}`)
+      const response = await api.get(`/api/attendance/monthly/${year}/${month}`)
       setMonthlyReport(response.data)
     } catch (error) {
       console.error('Error fetching monthly report:', error)
@@ -58,7 +58,7 @@ const Attendance = () => {
 
   const handleAttendanceChange = async (studentId, status) => {
     try {
-      await axios.post('/api/attendance', {
+      await api.post('/api/attendance', {
         student_id: studentId,
         date: selectedDate,
         status,
@@ -72,7 +72,7 @@ const Attendance = () => {
 
   const handleBulkAttendance = async (records) => {
     try {
-      await axios.post('/api/attendance/bulk', {
+      await api.post('/api/attendance/bulk', {
         date: selectedDate,
         records
       })

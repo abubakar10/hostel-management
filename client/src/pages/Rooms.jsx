@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import axios from 'axios'
+import api from '../config/api'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, Edit, Search, X, Users } from 'lucide-react'
 
@@ -33,7 +33,7 @@ const Rooms = () => {
 
   const fetchRooms = async () => {
     try {
-      const response = await axios.get('/api/rooms')
+      const response = await api.get('/api/rooms')
       setRooms(response.data)
     } catch (error) {
       console.error('Error fetching rooms:', error)
@@ -44,7 +44,7 @@ const Rooms = () => {
 
   const fetchRoomTypes = async () => {
     try {
-      const response = await axios.get('/api/rooms/types/all')
+      const response = await api.get('/api/rooms/types/all')
       setRoomTypes(response.data)
     } catch (error) {
       console.error('Error fetching room types:', error)
@@ -53,7 +53,7 @@ const Rooms = () => {
 
   const fetchStudents = async () => {
     try {
-      const response = await axios.get('/api/students')
+      const response = await api.get('/api/students')
       setStudents(response.data.filter(s => s.status === 'active'))
     } catch (error) {
       console.error('Error fetching students:', error)
@@ -64,9 +64,9 @@ const Rooms = () => {
     e.preventDefault()
     try {
       if (editingRoom) {
-        await axios.put(`/api/rooms/${editingRoom.id}`, formData)
+        await api.put(`/api/rooms/${editingRoom.id}`, formData)
       } else {
-        await axios.post('/api/rooms', formData)
+        await api.post('/api/rooms', formData)
       }
       fetchRooms()
       setShowModal(false)
@@ -79,7 +79,7 @@ const Rooms = () => {
   const handleAllocate = async (e) => {
     e.preventDefault()
     try {
-      await axios.post('/api/rooms/allocate', allocationData)
+      await api.post('/api/rooms/allocate', allocationData)
       fetchRooms()
       fetchStudents()
       setShowAllocationModal(false)

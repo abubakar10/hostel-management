@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import axios from 'axios'
+import api from '../config/api'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, Edit, Trash2, Search, X } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
@@ -32,7 +32,7 @@ const Students = () => {
 
   const fetchStudents = async () => {
     try {
-      const response = await axios.get('/api/students')
+      const response = await api.get('/api/students')
       setStudents(response.data)
     } catch (error) {
       console.error('Error fetching students:', error)
@@ -51,9 +51,9 @@ const Students = () => {
       }
 
       if (editingStudent) {
-        await axios.put(`/api/students/${editingStudent.id}`, submitData)
+        await api.put(`/api/students/${editingStudent.id}`, submitData)
       } else {
-        await axios.post('/api/students', submitData)
+        await api.post('/api/students', submitData)
       }
       fetchStudents()
       setShowModal(false)
@@ -68,7 +68,7 @@ const Students = () => {
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this student?')) {
       try {
-        await axios.delete(`/api/students/${id}`)
+        await api.delete(`/api/students/${id}`)
         fetchStudents()
       } catch (error) {
         alert(error.response?.data?.error || 'Error deleting student')

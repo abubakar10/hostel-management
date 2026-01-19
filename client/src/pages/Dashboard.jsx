@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import axios from 'axios'
+import api from '../config/api'
 import { motion } from 'framer-motion'
 import {
   Users,
@@ -28,10 +28,10 @@ const Dashboard = () => {
   const fetchDashboardData = async () => {
     try {
       const [students, rooms, fees, complaints] = await Promise.all([
-        axios.get('/api/students'),
-        axios.get('/api/rooms'),
-        axios.get('/api/fees'),
-        axios.get('/api/complaints')
+        api.get('/api/students'),
+        api.get('/api/rooms'),
+        api.get('/api/fees'),
+        api.get('/api/complaints')
       ])
 
       const totalFees = fees.data

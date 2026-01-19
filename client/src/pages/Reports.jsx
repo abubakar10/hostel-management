@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import axios from 'axios'
+import api from '../config/api'
 import { motion } from 'framer-motion'
 import {
   BarChart,
@@ -37,10 +37,10 @@ const Reports = () => {
     setLoading(true)
     try {
       const [incomeExp, profit, category, comparison] = await Promise.all([
-        axios.get(`/api/reports/income-expenses/${selectedYear}/${selectedMonth}`),
-        axios.get(`/api/reports/profit-loss/${selectedYear}`),
-        axios.get(`/api/reports/category-breakdown/${selectedYear}/${selectedMonth}`),
-        axios.get(`/api/reports/monthly-comparison/${selectedYear}`)
+        api.get(`/api/reports/income-expenses/${selectedYear}/${selectedMonth}`),
+        api.get(`/api/reports/profit-loss/${selectedYear}`),
+        api.get(`/api/reports/category-breakdown/${selectedYear}/${selectedMonth}`),
+        api.get(`/api/reports/monthly-comparison/${selectedYear}`)
       ])
 
       setIncomeExpenses(incomeExp.data)

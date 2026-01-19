@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import axios from 'axios'
+import api from '../config/api'
 import { motion } from 'framer-motion'
 import { Plus, Edit, AlertCircle, Wrench, Search, Filter } from 'lucide-react'
 
@@ -41,7 +41,7 @@ const Complaints = () => {
   const fetchComplaints = async () => {
     try {
       const params = filter !== 'all' ? { status: filter } : {}
-      const response = await axios.get('/api/complaints', { params })
+      const response = await api.get('/api/complaints', { params })
       setComplaints(response.data)
     } catch (error) {
       console.error('Error fetching complaints:', error)
@@ -53,7 +53,7 @@ const Complaints = () => {
   const fetchMaintenance = async () => {
     try {
       const params = filter !== 'all' ? { status: filter } : {}
-      const response = await axios.get('/api/complaints/maintenance/all', { params })
+      const response = await api.get('/api/complaints/maintenance/all', { params })
       setMaintenance(response.data)
     } catch (error) {
       console.error('Error fetching maintenance:', error)
@@ -62,7 +62,7 @@ const Complaints = () => {
 
   const fetchStudents = async () => {
     try {
-      const response = await axios.get('/api/students')
+      const response = await api.get('/api/students')
       setStudents(response.data.filter(s => s.status === 'active'))
     } catch (error) {
       console.error('Error fetching students:', error)
@@ -71,7 +71,7 @@ const Complaints = () => {
 
   const fetchStaff = async () => {
     try {
-      const response = await axios.get('/api/staff')
+      const response = await api.get('/api/staff')
       setStaff(response.data.filter(s => s.status === 'active'))
     } catch (error) {
       console.error('Error fetching staff:', error)
@@ -80,7 +80,7 @@ const Complaints = () => {
 
   const fetchRooms = async () => {
     try {
-      const response = await axios.get('/api/rooms')
+      const response = await api.get('/api/rooms')
       setRooms(response.data)
     } catch (error) {
       console.error('Error fetching rooms:', error)
@@ -91,9 +91,9 @@ const Complaints = () => {
     e.preventDefault()
     try {
       if (editingItem) {
-        await axios.put(`/api/complaints/${editingItem.id}`, formData)
+        await api.put(`/api/complaints/${editingItem.id}`, formData)
       } else {
-        await axios.post('/api/complaints', formData)
+        await api.post('/api/complaints', formData)
       }
       fetchComplaints()
       setShowModal(false)
@@ -107,9 +107,9 @@ const Complaints = () => {
     e.preventDefault()
     try {
       if (editingItem) {
-        await axios.put(`/api/complaints/maintenance/${editingItem.id}`, maintenanceData)
+        await api.put(`/api/complaints/maintenance/${editingItem.id}`, maintenanceData)
       } else {
-        await axios.post('/api/complaints/maintenance', maintenanceData)
+        await api.post('/api/complaints/maintenance', maintenanceData)
       }
       fetchMaintenance()
       setShowModal(false)

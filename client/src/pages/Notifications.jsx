@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import axios from 'axios'
+import api from '../config/api'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Bell, Check, Trash2, AlertCircle, Info, Clock } from 'lucide-react'
 
@@ -15,7 +15,7 @@ const Notifications = () => {
   const fetchNotifications = async () => {
     try {
       const params = filter !== 'all' ? { is_read: filter === 'read' } : {}
-      const response = await axios.get('/api/notifications', { params })
+      const response = await api.get('/api/notifications', { params })
       setNotifications(response.data)
     } catch (error) {
       console.error('Error fetching notifications:', error)
@@ -26,7 +26,7 @@ const Notifications = () => {
 
   const markAsRead = async (id) => {
     try {
-      await axios.put(`/api/notifications/${id}/read`)
+      await api.put(`/api/notifications/${id}/read`)
       fetchNotifications()
     } catch (error) {
       console.error('Error marking notification as read:', error)
@@ -35,7 +35,7 @@ const Notifications = () => {
 
   const markAllAsRead = async () => {
     try {
-      await axios.put('/api/notifications/read-all')
+      await api.put('/api/notifications/read-all')
       fetchNotifications()
     } catch (error) {
       console.error('Error marking all as read:', error)
@@ -44,7 +44,7 @@ const Notifications = () => {
 
   const deleteNotification = async (id) => {
     try {
-      await axios.delete(`/api/notifications/${id}`)
+      await api.delete(`/api/notifications/${id}`)
       fetchNotifications()
     } catch (error) {
       console.error('Error deleting notification:', error)
