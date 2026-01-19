@@ -5,13 +5,27 @@ dotenv.config();
 
 const { Pool } = pkg;
 
-export const pool = new Pool({
-  user: process.env.DB_USER || 'postgres',
-  host: process.env.DB_HOST || 'localhost',
-  database: process.env.DB_NAME || 'hostel_management',
-  password: process.env.DB_PASSWORD || 'postgres',
-  port: process.env.DB_PORT || 5432,
-});
+// Support both DATABASE_URL (for Vercel/Railway) and individual env vars
+let poolConfig;
+
+if (process.env.DATABASE_URL) {
+  // Use connection string (for Vercel, Railway, etc.)
+  poolConfig = {
+    connectionString: process.env.DATABASE_URL,
+    ssl: process.env.DATABASE_URL.includes('sslmode=require') ? { rejectUnauthorized: false } : false
+  };
+} else {
+  // Use individual environment variables
+  poolConfig = {
+    user: process.env.DB_USER || 'postgres',
+    host: process.env.DB_HOST || 'localhost',
+    database: process.env.DB_NAME || 'hostel_management',
+    password: process.env.DB_PASSWORD || 'postgres',
+    port: process.env.DB_PORT || 5432,
+  };
+}
+
+export const pool = new Pool(poolConfig);
 
 // Test connection
 pool.on('connect', () => {
