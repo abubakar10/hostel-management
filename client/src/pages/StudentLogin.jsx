@@ -2,9 +2,9 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { motion } from 'framer-motion'
-import { Building2 } from 'lucide-react'
+import { GraduationCap } from 'lucide-react'
 
-const Login = () => {
+const StudentLogin = () => {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -17,10 +17,10 @@ const Login = () => {
     setError('')
     setLoading(true)
 
-    const result = await login(username, password)
+    const result = await login(username, password, 'student')
     
     if (result.success) {
-      navigate('/dashboard')
+      navigate('/student/dashboard')
     } else {
       setError(result.error)
     }
@@ -42,10 +42,10 @@ const Login = () => {
             transition={{ delay: 0.2, type: 'spring' }}
             className="inline-block p-4 bg-primary-100 dark:bg-primary-900/30 rounded-full mb-4"
           >
-            <Building2 size={48} className="text-primary-600 dark:text-primary-400" />
+            <GraduationCap size={48} className="text-primary-600 dark:text-primary-400" />
           </motion.div>
-          <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">Hostel Management</h1>
-          <p className="text-gray-600 dark:text-gray-400">Sign in to your account</p>
+          <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">Student Portal</h1>
+          <p className="text-gray-600 dark:text-gray-400">Sign in to your student account</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -61,7 +61,7 @@ const Login = () => {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Username or Email
+              Student ID or Email
             </label>
             <input
               type="text"
@@ -69,7 +69,7 @@ const Login = () => {
               onChange={(e) => setUsername(e.target.value)}
               className="input-field"
               required
-              placeholder="Enter your username"
+              placeholder="Enter your student ID or email"
             />
           </div>
 
@@ -85,6 +85,9 @@ const Login = () => {
               required
               placeholder="Enter your password"
             />
+            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+              Default password is your Student ID
+            </p>
           </div>
 
           <motion.button
@@ -100,10 +103,10 @@ const Login = () => {
 
         <div className="mt-6 text-center">
           <a
-            href="/student/login"
+            href="/login"
             className="text-sm text-primary-600 dark:text-primary-400 hover:underline"
           >
-            Student Login
+            Admin Login
           </a>
         </div>
       </motion.div>
@@ -111,5 +114,5 @@ const Login = () => {
   )
 }
 
-export default Login
+export default StudentLogin
 

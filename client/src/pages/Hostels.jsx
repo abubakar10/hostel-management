@@ -3,6 +3,7 @@ import api from '../config/api'
 import { motion } from 'framer-motion'
 import { Plus, Edit, Trash2, Building2, Users, Home, DollarSign } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import { useNotification } from '../context/NotificationContext'
 
 const Hostels = () => {
   const { user } = useAuth()
@@ -58,20 +59,25 @@ const Hostels = () => {
       fetchHostels()
       setShowModal(false)
       resetForm()
+      showSuccess(editingHostel ? 'Hostel updated successfully' : 'Hostel created successfully')
     } catch (error) {
-      alert(error.response?.data?.error || 'Error saving hostel')
+      showError(error.response?.data?.error || 'Error saving hostel')
     }
   }
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this hostel? This will delete all associated data!')) {
-      try {
-        await api.delete(`/api/hostels/${id}`)
-        fetchHostels()
-      } catch (error) {
-        alert(error.response?.data?.error || 'Error deleting hostel')
+    showConfirm(
+      'Are you sure you want to delete this hostel? This will delete all associated data!',
+      async () => {
+        try {
+          await api.delete(`/api/hostels/${id}`)
+          fetchHostels()
+          showSuccess('Hostel deleted successfully')
+        } catch (error) {
+          showError(error.response?.data?.error || 'Error deleting hostel')
+        }
       }
-    }
+    )
   }
 
   const handleEdit = (hostel) => {

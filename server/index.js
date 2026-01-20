@@ -13,6 +13,13 @@ import reportRoutes from './routes/reports.js';
 import notificationRoutes from './routes/notifications.js';
 import hostelRoutes from './routes/hostels.js';
 import userRoutes from './routes/users.js';
+import visitorRoutes from './routes/visitors.js';
+import leaveRoutes from './routes/leaves.js';
+import messRoutes from './routes/mess.js';
+import inventoryRoutes from './routes/inventory.js';
+import documentRoutes from './routes/documents.js';
+import roomTransferRoutes from './routes/roomTransfers.js';
+import studentPortalRoutes from './routes/studentPortal.js';
 
 dotenv.config();
 
@@ -73,6 +80,13 @@ app.use('/api/reports', reportRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/hostels', hostelRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/visitors', visitorRoutes);
+app.use('/api/leaves', leaveRoutes);
+app.use('/api/mess', messRoutes);
+app.use('/api/inventory', inventoryRoutes);
+app.use('/api/documents', documentRoutes);
+app.use('/api/room-transfers', roomTransferRoutes);
+app.use('/api/student', studentPortalRoutes);
 
 // Health check with database connection test
 app.get('/api/health', async (req, res) => {

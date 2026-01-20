@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import api from '../config/api'
 import { motion } from 'framer-motion'
 import { Plus, Edit, AlertCircle, Wrench, Search, Filter } from 'lucide-react'
+import { useNotification } from '../context/NotificationContext'
 
 const Complaints = () => {
   const [complaints, setComplaints] = useState([])
@@ -98,8 +99,9 @@ const Complaints = () => {
       fetchComplaints()
       setShowModal(false)
       resetForm()
+      showSuccess(editingItem ? 'Complaint updated successfully' : 'Complaint created successfully')
     } catch (error) {
-      alert(error.response?.data?.error || 'Error saving complaint')
+      showError(error.response?.data?.error || 'Error saving complaint')
     }
   }
 
@@ -114,8 +116,9 @@ const Complaints = () => {
       fetchMaintenance()
       setShowModal(false)
       resetMaintenanceForm()
+      showSuccess(editingItem ? 'Maintenance request updated successfully' : 'Maintenance request created successfully')
     } catch (error) {
-      alert(error.response?.data?.error || 'Error saving maintenance request')
+      showError(error.response?.data?.error || 'Error saving maintenance request')
     }
   }
 

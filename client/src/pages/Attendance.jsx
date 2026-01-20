@@ -3,6 +3,7 @@ import api from '../config/api'
 import { motion } from 'framer-motion'
 import { Calendar, CheckCircle, XCircle, Clock, Download } from 'lucide-react'
 import { format } from 'date-fns'
+import { useNotification } from '../context/NotificationContext'
 
 const Attendance = () => {
   const [students, setStudents] = useState([])
@@ -65,8 +66,9 @@ const Attendance = () => {
         remarks: ''
       })
       fetchDailyAttendance()
+      showSuccess('Attendance updated successfully')
     } catch (error) {
-      alert(error.response?.data?.error || 'Error updating attendance')
+      showError(error.response?.data?.error || 'Error updating attendance')
     }
   }
 
@@ -77,9 +79,9 @@ const Attendance = () => {
         records
       })
       fetchDailyAttendance()
-      alert('Attendance recorded successfully!')
+      showSuccess('Attendance recorded successfully!')
     } catch (error) {
-      alert(error.response?.data?.error || 'Error recording attendance')
+      showError(error.response?.data?.error || 'Error recording attendance')
     }
   }
 

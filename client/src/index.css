@@ -4,7 +4,7 @@
 
 @layer base {
   body {
-    @apply bg-gray-50 text-gray-900;
+    @apply bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200;
   }
 }
 
@@ -23,6 +23,7 @@
   
   .input-field {
     @apply w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all duration-200;
+    scroll-behavior: smooth;
   }
   
   .table-container {
@@ -46,7 +47,28 @@
   }
   
   .table-cell {
-    @apply px-6 py-4 whitespace-nowrap text-sm text-gray-900;
+    @apply px-3 sm:px-4 md:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900;
+  }
+  
+  /* Mobile-friendly buttons */
+  .btn-primary,
+  .btn-secondary {
+    @apply min-h-[44px] touch-manipulation;
+  }
+  
+  /* Mobile-optimized cards */
+  .card {
+    @apply p-4 sm:p-6;
+  }
+  
+  /* Mobile-friendly inputs */
+  .input-field {
+    @apply text-base sm:text-sm;
+  }
+  
+  /* Mobile-optimized modal */
+  .modal-mobile {
+    @apply w-full max-w-full sm:max-w-md md:max-w-2xl;
   }
 }
 
@@ -61,10 +83,187 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-gray-400 rounded-full;
+  @apply bg-gray-400 dark:bg-gray-600 rounded-full;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-gray-500;
+  @apply bg-gray-500 dark:bg-gray-500;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-gray-100 dark:bg-gray-800;
+}
+
+/* Smooth scrolling for dropdowns */
+select {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Smooth scrolling for date picker dropdowns */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+}
+
+/* Ensure smooth scrolling in modals and scrollable containers */
+.modal-content,
+[class*="overflow"] {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Smooth scrolling for native dropdown lists */
+select:focus {
+  scroll-behavior: smooth;
+}
+
+/* Mobile-specific improvements */
+@media (max-width: 640px) {
+  /* Ensure tables are scrollable on mobile */
+  .table-container {
+    -webkit-overflow-scrolling: touch;
+    overflow-x: auto;
+    display: block;
+    width: 100%;
+    margin-left: -0.75rem;
+    margin-right: -0.75rem;
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+  
+  .table {
+    min-width: 640px; /* Ensure table doesn't get too compressed */
+  }
+  
+  /* Better touch targets on mobile */
+  button, a, label[role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Prevent text size adjustment on iOS */
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+  
+  /* Better modal spacing on mobile */
+  .modal-content {
+    padding: 1rem !important;
+    max-height: 90vh;
+    margin: 0.5rem;
+    border-radius: 0.75rem;
+  }
+  
+  /* Stack form elements better on mobile */
+  .grid {
+    grid-template-columns: 1fr !important;
+  }
+  
+  /* Make page headers responsive */
+  h1 {
+    font-size: 1.5rem !important;
+    line-height: 1.2;
+  }
+  
+  /* Make cards more compact on mobile */
+  .card {
+    padding: 1rem !important;
+    margin: 0 -0.75rem;
+    border-radius: 0.5rem;
+  }
+  
+  /* Better button spacing */
+  .btn-primary, .btn-secondary {
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+  }
+  
+  /* Responsive text sizes */
+  .text-3xl {
+    font-size: 1.5rem !important;
+  }
+  
+  .text-2xl {
+    font-size: 1.25rem !important;
+  }
+  
+  /* Better spacing in flex containers */
+  .flex.gap-4 {
+    gap: 0.75rem;
+  }
+  
+  /* Hide labels on very small screens, show icons */
+  .hidden-mobile {
+    display: none;
+  }
+}
+
+/* Tablet improvements */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .table {
+    min-width: 800px;
+  }
+  
+  .card {
+    padding: 1.25rem;
+  }
+  
+  h1 {
+    font-size: 2rem;
+  }
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+  /* Larger touch targets */
+  button, a, input[type="button"], input[type="submit"], label[role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Remove hover effects on touch devices */
+  .hover\:scale-105:hover {
+    transform: none;
+  }
+  
+  /* Better spacing for touch */
+  .space-y-4 > * + * {
+    margin-top: 0.75rem;
+  }
+  
+  /* Larger tap areas */
+  .p-2 {
+    padding: 0.75rem;
+  }
+}
+
+/* Global mobile improvements */
+@media (max-width: 1024px) {
+  /* Make all modals mobile-friendly */
+  .fixed.inset-0 .bg-white {
+    margin: 0.5rem;
+    max-width: calc(100% - 1rem) !important;
+  }
+  
+  /* Better form layouts */
+  form .grid {
+    gap: 0.75rem;
+  }
+  
+  /* Responsive table cells */
+  .table-cell {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+  }
+  
+  .table-header-cell {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.75rem;
+  }
 }
 

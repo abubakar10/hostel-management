@@ -3,9 +3,11 @@ import api from '../config/api'
 import { motion } from 'framer-motion'
 import { Plus, Edit, Trash2, UserPlus, Shield, Building2 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import { useNotification } from '../context/NotificationContext'
 
 const Users = () => {
   const { user } = useAuth()
+  const { showError, showSuccess, showConfirm } = useNotification()
   const [users, setUsers] = useState([])
   const [hostels, setHostels] = useState([])
   const [loading, setLoading] = useState(true)
@@ -61,22 +63,27 @@ const Users = () => {
       fetchUsers()
       setShowModal(false)
       resetForm()
+      showSuccess(editingUser ? 'User updated successfully' : 'User created successfully')
     } catch (error) {
       const errorMessage = error.response?.data?.error || error.message || 'Error saving user'
       console.error('Error details:', error.response?.data)
-      alert(errorMessage)
+      showError(errorMessage)
     }
   }
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this user?')) {
-      try {
-        await api.delete(`/api/users/${id}`)
-        fetchUsers()
-      } catch (error) {
-        alert(error.response?.data?.error || 'Error deleting user')
+    showConfirm(
+      'Are you sure you want to delete this user?',
+      async () => {
+        try {
+          await api.delete(`/api/users/${id}`)
+          fetchUsers()
+          showSuccess('User deleted successfully')
+        } catch (error) {
+          showError(error.response?.data?.error || 'Error deleting user')
+        }
       }
-    }
+    )
   }
 
   const handleEdit = (userData) => {

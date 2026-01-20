@@ -159,5 +159,87 @@ router.get('/stats/overview', authenticateToken, async (req, res) => {
   }
 });
 
+// Get overdue fees
+router.get('/overdue/list', authenticateToken, setHostelContext, async (req, res) => {
+  try {
+    let query = `
+      SELECT f.*, s.first_name, s.last_name, s.student_id as student_number, s.email, s.phone
+      FROM fees f
+      JOIN students s ON f.student_id = s.id
+      WHERE f.status IN ('pending', 'overdue')
+      AND f.due_date < CURRENT_DATE
+    `;
+    const params = [];
+    let paramCount = 1;
+
+    // Filter by hostel_id
+    if (req.user.role !== 'super_admin' || req.query.hostel_id) {
+      query += ` AND f.hostel_id = $${paramCount++}`;
+      params.push(req.hostelId || req.query.hostel_id);
+    }
+
+    query += ' ORDER BY f.due_date ASC';
+
+    const result = await pool.query(query, params);
+    res.json(result.rows);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Send payment reminders (creates notifications)
+router.post('/reminders/send', authenticateToken, setHostelContext, async (req, res) => {
+  try {
+    let query = `
+      SELECT f.*, s.first_name, s.last_name, s.student_id as student_number, s.email, s.phone
+      FROM fees f
+      JOIN students s ON f.student_id = s.id
+      WHERE f.status IN ('pending', 'overdue')
+      AND f.due_date < CURRENT_DATE
+    `;
+    const params = [];
+    let paramCount = 1;
+
+    // Filter by hostel_id
+    if (req.user.role !== 'super_admin' || req.body.hostel_id) {
+      query += ` AND f.hostel_id = $${paramCount++}`;
+      params.push(req.hostelId || req.body.hostel_id);
+    }
+
+    const overdueFees = await pool.query(query, params);
+
+    // Create notifications for each overdue fee
+    const notifications = [];
+    for (const fee of overdueFees.rows) {
+      // Get student's user account if exists
+      const userResult = await pool.query(
+        'SELECT id FROM users WHERE email = $1',
+        [fee.email]
+      );
+
+      if (userResult.rows.length > 0) {
+        const notification = await pool.query(
+          `INSERT INTO notifications (user_id, title, message, type, related_module, is_read)
+           VALUES ($1, $2, $3, 'reminder', 'fees', false)
+           RETURNING *`,
+          [
+            userResult.rows[0].id,
+            'Payment Reminder',
+            `Your ${fee.fee_type} fee of RS ${fee.amount} was due on ${new Date(fee.due_date).toLocaleDateString()}. Please make payment as soon as possible.`
+          ]
+        );
+        notifications.push(notification.rows[0]);
+      }
+    }
+
+    res.json({
+      message: `Reminders sent to ${notifications.length} students`,
+      notifications: notifications.length
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;
 

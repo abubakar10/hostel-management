@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
 import api from '../config/api'
 import { motion } from 'framer-motion'
-import { Plus, Search, DollarSign, CheckCircle, XCircle, FileText } from 'lucide-react'
+import { Plus, Search, DollarSign, CheckCircle, XCircle, FileText, Bell } from 'lucide-react'
+import { useNotification } from '../context/NotificationContext'
 
 const Fees = () => {
+  const { showError, showSuccess, showConfirm } = useNotification()
   const [fees, setFees] = useState([])
   const [students, setStudents] = useState([])
   const [loading, setLoading] = useState(true)
@@ -59,8 +61,9 @@ const Fees = () => {
         due_date: '',
         payment_method: ''
       })
+      showSuccess('Fee created successfully')
     } catch (error) {
-      alert(error.response?.data?.error || 'Error creating fee')
+      showError(error.response?.data?.error || 'Error creating fee')
     }
   }
 
@@ -72,14 +75,29 @@ const Fees = () => {
         payment_method: 'cash'
       })
       fetchFees()
+      showSuccess('Fee marked as paid successfully')
     } catch (error) {
-      alert(error.response?.data?.error || 'Error updating fee')
+      showError(error.response?.data?.error || 'Error updating fee')
     }
   }
 
   const viewReceipt = (fee) => {
     setSelectedReceipt(fee)
     setShowReceiptModal(true)
+  }
+
+  const handleSendReminders = async () => {
+    showConfirm(
+      'Send payment reminders to all students with overdue fees?',
+      async () => {
+        try {
+          const response = await api.post('/api/fees/reminders/send')
+          showSuccess(`Reminders sent to ${response.data.notifications} students`)
+        } catch (error) {
+          showError(error.response?.data?.error || 'Error sending reminders')
+        }
+      }
+    )
   }
 
   const filteredFees = fees.filter(fee =>
@@ -102,13 +120,24 @@ const Fees = () => {
           <h1 className="text-3xl font-bold text-gray-800 mb-2">Fee Management</h1>
           <p className="text-gray-600">Manage hostel and mess fees</p>
         </div>
-        <button
-          onClick={() => setShowModal(true)}
-          className="btn-primary flex items-center gap-2"
-        >
-          <Plus size={20} />
-          Add Fee
-        </button>
+        <div className="flex gap-2">
+          {stats.overdue > 0 && (
+            <button
+              onClick={handleSendReminders}
+              className="btn-secondary flex items-center gap-2"
+            >
+              <Bell size={20} />
+              Send Reminders
+            </button>
+          )}
+          <button
+            onClick={() => setShowModal(true)}
+            className="btn-primary flex items-center gap-2"
+          >
+            <Plus size={20} />
+            Add Fee
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

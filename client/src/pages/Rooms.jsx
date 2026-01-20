@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react'
 import api from '../config/api'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, Edit, Search, X, Users } from 'lucide-react'
+import { useNotification } from '../context/NotificationContext'
 
 const Rooms = () => {
+  const { showError, showSuccess } = useNotification()
   const [rooms, setRooms] = useState([])
   const [roomTypes, setRoomTypes] = useState([])
   const [loading, setLoading] = useState(true)
@@ -71,8 +73,9 @@ const Rooms = () => {
       fetchRooms()
       setShowModal(false)
       resetForm()
+      showSuccess(editingRoom ? 'Room updated successfully' : 'Room created successfully')
     } catch (error) {
-      alert(error.response?.data?.error || 'Error saving room')
+      showError(error.response?.data?.error || 'Error saving room')
     }
   }
 
@@ -84,9 +87,9 @@ const Rooms = () => {
       fetchStudents()
       setShowAllocationModal(false)
       setAllocationData({ student_id: '', room_id: '' })
-      alert('Room allocated successfully!')
+      showSuccess('Room allocated successfully!')
     } catch (error) {
-      alert(error.response?.data?.error || 'Error allocating room')
+      showError(error.response?.data?.error || 'Error allocating room')
     }
   }
 

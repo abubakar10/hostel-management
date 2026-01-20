@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react'
 import api from '../config/api'
 import { motion } from 'framer-motion'
 import { Plus, Edit, Trash2, Search, UserCog, Users, Shield } from 'lucide-react'
+import { useNotification } from '../context/NotificationContext'
 
 const Staff = () => {
+  const { showError, showSuccess, showConfirm } = useNotification()
   const [staff, setStaff] = useState([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
@@ -50,20 +52,25 @@ const Staff = () => {
       fetchStaff()
       setShowModal(false)
       resetForm()
+      showSuccess(editingStaff ? 'Staff member updated successfully' : 'Staff member created successfully')
     } catch (error) {
-      alert(error.response?.data?.error || 'Error saving staff member')
+      showError(error.response?.data?.error || 'Error saving staff member')
     }
   }
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this staff member?')) {
-      try {
-        await api.delete(`/api/staff/${id}`)
-        fetchStaff()
-      } catch (error) {
-        alert(error.response?.data?.error || 'Error deleting staff member')
+    showConfirm(
+      'Are you sure you want to delete this staff member?',
+      async () => {
+        try {
+          await api.delete(`/api/staff/${id}`)
+          fetchStaff()
+          showSuccess('Staff member deleted successfully')
+        } catch (error) {
+          showError(error.response?.data?.error || 'Error deleting staff member')
+        }
       }
-    }
+    )
   }
 
   const handleEdit = (staffMember) => {

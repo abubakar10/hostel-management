@@ -204,5 +204,15 @@ router.put('/maintenance/:id', authenticateToken, async (req, res) => {
   }
 });
 
+// Delete maintenance request
+router.delete('/maintenance/:id', authenticateToken, async (req, res) => {
+  try {
+    await pool.query('DELETE FROM maintenance_requests WHERE id = $1', [req.params.id]);
+    res.json({ message: 'Maintenance request deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;
 
