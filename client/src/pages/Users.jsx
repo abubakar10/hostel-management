@@ -124,7 +124,7 @@ const Users = () => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">User Management</h1>
+          <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">User Management</h1>
           <p className="text-gray-600">Create and manage hostel admin users</p>
         </div>
         <button
@@ -229,14 +229,14 @@ const Users = () => {
             className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md"
           >
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-800">
+              <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">
                 {editingUser ? 'Edit User' : 'Create Hostel Admin'}
               </h2>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Username *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Username *</label>
                 <input
                   type="text"
                   value={formData.username}
@@ -246,7 +246,7 @@ const Users = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email *</label>
                 <input
                   type="email"
                   value={formData.email}
@@ -256,7 +256,7 @@ const Users = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Password {editingUser ? '(leave blank to keep current)' : '*'}
                 </label>
                 <input
@@ -268,7 +268,7 @@ const Users = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Role *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Role *</label>
                 <select
                   value={formData.role}
                   onChange={(e) => setFormData({ ...formData, role: e.target.value, hostel_id: e.target.value === 'super_admin' ? '' : formData.hostel_id })}
@@ -281,7 +281,7 @@ const Users = () => {
               </div>
               {formData.role !== 'super_admin' && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Hostel *</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Hostel *</label>
                   <select
                     value={formData.hostel_id}
                     onChange={(e) => setFormData({ ...formData, hostel_id: e.target.value })}

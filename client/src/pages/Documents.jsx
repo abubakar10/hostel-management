@@ -284,7 +284,7 @@ const Documents = () => {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md modal-content"
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 w-full max-w-md modal-content"
             >
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Upload Document</h2>
@@ -301,7 +301,7 @@ const Documents = () => {
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Student *</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Student *</label>
                   <select
                     value={formData.student_id}
                     onChange={(e) => setFormData({ ...formData, student_id: e.target.value })}
@@ -317,7 +317,7 @@ const Documents = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Document Type *</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Document Type *</label>
                   <select
                     value={formData.document_type}
                     onChange={(e) => setFormData({ ...formData, document_type: e.target.value })}
@@ -332,7 +332,7 @@ const Documents = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">File *</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">File *</label>
                   <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600">
                     <div className="flex flex-col items-center justify-center pt-5 pb-6">
                       <Upload className="w-8 h-8 mb-2 text-gray-500" />

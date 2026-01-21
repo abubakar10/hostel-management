@@ -168,15 +168,15 @@ export const NotificationProvider = ({ children }) => {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full"
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 max-w-md w-full"
             >
               <div className="flex items-start gap-4 mb-4">
-                <div className="bg-yellow-100 p-3 rounded-full">
-                  <AlertTriangle size={24} className="text-yellow-600" />
+                <div className="bg-yellow-100 dark:bg-yellow-900/20 p-3 rounded-full">
+                  <AlertTriangle size={24} className="text-yellow-600 dark:text-yellow-400" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-2">Confirm Action</h3>
-                  <p className="text-gray-600">{confirmDialog.message}</p>
+                  <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2">Confirm Action</h3>
+                  <p className="text-gray-600 dark:text-gray-400">{confirmDialog.message}</p>
                 </div>
               </div>
               <div className="flex gap-3 justify-end">

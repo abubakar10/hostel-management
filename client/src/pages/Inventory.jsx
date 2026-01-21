@@ -130,7 +130,7 @@ const Inventory = () => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">Inventory Management</h1>
+          <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">Inventory Management</h1>
           <p className="text-gray-600">Track and manage hostel inventory</p>
         </div>
         <button
@@ -258,10 +258,10 @@ const Inventory = () => {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto modal-content"
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto modal-content"
             >
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-800">
+                <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">
                   {editingItem ? 'Edit Inventory Item' : 'Add Inventory Item'}
                 </h2>
                 <button
@@ -278,7 +278,7 @@ const Inventory = () => {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Item Name *</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Item Name *</label>
                     <input
                       type="text"
                       value={formData.item_name}
@@ -288,7 +288,7 @@ const Inventory = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Category</label>
                     <input
                       type="text"
                       value={formData.category}
@@ -307,7 +307,7 @@ const Inventory = () => {
                     </datalist>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Quantity *</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Quantity *</label>
                     <input
                       type="number"
                       value={formData.quantity}
@@ -318,7 +318,7 @@ const Inventory = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Unit</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Unit</label>
                     <select
                       value={formData.unit}
                       onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
@@ -331,7 +331,7 @@ const Inventory = () => {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Location</label>
                     <input
                       type="text"
                       value={formData.location}
@@ -341,7 +341,7 @@ const Inventory = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Condition</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Condition</label>
                     <select
                       value={formData.condition}
                       onChange={(e) => setFormData({ ...formData, condition: e.target.value })}
@@ -354,7 +354,7 @@ const Inventory = () => {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Purchase Date</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Purchase Date</label>
                     <input
                       type="date"
                       value={formData.purchase_date}
@@ -363,7 +363,7 @@ const Inventory = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Purchase Price (RS)</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Purchase Price (RS)</label>
                     <input
                       type="number"
                       step="0.01"
@@ -373,7 +373,7 @@ const Inventory = () => {
                     />
                   </div>
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Supplier</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Supplier</label>
                     <input
                       type="text"
                       value={formData.supplier}

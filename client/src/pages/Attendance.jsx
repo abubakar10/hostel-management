@@ -98,14 +98,14 @@ const Attendance = () => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">Attendance Tracking</h1>
-          <p className="text-gray-600">Track daily attendance and monthly reports</p>
+          <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">Attendance Tracking</h1>
+          <p className="text-gray-600 dark:text-gray-400">Track daily attendance and monthly reports</p>
         </div>
         <div className="flex gap-2">
           <button
             onClick={() => setView('daily')}
             className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              view === 'daily' ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-700'
+              view === 'daily' ? 'bg-primary-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200'
             }`}
           >
             Daily
@@ -170,16 +170,16 @@ const Attendance = () => {
                           initial={{ opacity: 0, y: 20 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: index * 0.05 }}
-                          className="hover:bg-gray-50"
+                          className="hover:bg-gray-50 dark:hover:bg-gray-700"
                         >
                           <td className="table-cell font-medium">{student.student_id}</td>
                           <td className="table-cell">{student.first_name} {student.last_name}</td>
                           <td className="table-cell">{student.room_number || 'N/A'}</td>
                           <td className="table-cell">
                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              status === 'present' ? 'bg-green-100 text-green-800' :
-                              status === 'late' ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-red-100 text-red-800'
+                              status === 'present' ? 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300' :
+                              status === 'late' ? 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-300' :
+                              'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-300'
                             }`}>
                               {status}
                             </span>
@@ -189,7 +189,7 @@ const Attendance = () => {
                               <button
                                 onClick={() => handleAttendanceChange(student.id, 'present')}
                                 className={`p-2 rounded transition-colors ${
-                                  status === 'present' ? 'bg-green-100 text-green-600' : 'text-gray-400 hover:bg-gray-100'
+                                  status === 'present' ? 'bg-green-100 dark:bg-green-900/20 text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700'
                                 }`}
                                 title="Present"
                               >
@@ -198,7 +198,7 @@ const Attendance = () => {
                               <button
                                 onClick={() => handleAttendanceChange(student.id, 'late')}
                                 className={`p-2 rounded transition-colors ${
-                                  status === 'late' ? 'bg-yellow-100 text-yellow-600' : 'text-gray-400 hover:bg-gray-100'
+                                  status === 'late' ? 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400' : 'text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700'
                                 }`}
                                 title="Late"
                               >
@@ -207,7 +207,7 @@ const Attendance = () => {
                               <button
                                 onClick={() => handleAttendanceChange(student.id, 'absent')}
                                 className={`p-2 rounded transition-colors ${
-                                  status === 'absent' ? 'bg-red-100 text-red-600' : 'text-gray-400 hover:bg-gray-100'
+                                  status === 'absent' ? 'bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400' : 'text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700'
                                 }`}
                                 title="Absent"
                               >
@@ -227,7 +227,7 @@ const Attendance = () => {
       ) : (
         <div className="card">
           <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Select Month</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Select Month</label>
             <input
               type="month"
               value={selectedMonth}
@@ -266,19 +266,19 @@ const Attendance = () => {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.05 }}
-                        className="hover:bg-gray-50"
+                        className="hover:bg-gray-50 dark:hover:bg-gray-700"
                       >
                         <td className="table-cell font-medium">{record.student_number}</td>
                         <td className="table-cell">{record.first_name} {record.last_name}</td>
-                        <td className="table-cell text-green-600 font-semibold">{record.present_days || 0}</td>
-                        <td className="table-cell text-red-600 font-semibold">{record.absent_days || 0}</td>
-                        <td className="table-cell text-yellow-600 font-semibold">{record.late_days || 0}</td>
+                        <td className="table-cell text-green-600 dark:text-green-400 font-semibold">{record.present_days || 0}</td>
+                        <td className="table-cell text-red-600 dark:text-red-400 font-semibold">{record.absent_days || 0}</td>
+                        <td className="table-cell text-yellow-600 dark:text-yellow-400 font-semibold">{record.late_days || 0}</td>
                         <td className="table-cell">{total}</td>
                         <td className="table-cell">
                           <span className={`font-semibold ${
-                            percentage >= 75 ? 'text-green-600' :
-                            percentage >= 50 ? 'text-yellow-600' :
-                            'text-red-600'
+                            percentage >= 75 ? 'text-green-600 dark:text-green-400' :
+                            percentage >= 50 ? 'text-yellow-600 dark:text-yellow-400' :
+                            'text-red-600 dark:text-red-400'
                           }`}>
                             {percentage}%
                           </span>

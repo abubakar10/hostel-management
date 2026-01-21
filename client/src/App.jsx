@@ -23,7 +23,6 @@ import Notifications from './pages/Notifications'
 import Hostels from './pages/Hostels'
 import Users from './pages/Users'
 import Layout from './components/Layout'
-import StudentLogin from './pages/StudentLogin'
 import StudentLayout from './components/StudentLayout'
 import StudentPrivateRoute from './components/StudentPrivateRoute'
 import StudentDashboard from './pages/student/StudentDashboard'
@@ -43,6 +42,7 @@ function App() {
           <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/student/login" element={<Navigate to="/login" replace />} />
           <Route
             path="/"
             element={
@@ -73,7 +73,6 @@ function App() {
           </Route>
 
           {/* Student Portal Routes */}
-          <Route path="/student/login" element={<StudentLogin />} />
           <Route
             path="/student"
             element={

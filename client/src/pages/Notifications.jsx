@@ -72,8 +72,8 @@ const Notifications = () => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">Notifications & Alerts</h1>
-          <p className="text-gray-600">View and manage all notifications</p>
+          <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">Notifications & Alerts</h1>
+          <p className="text-gray-600 dark:text-gray-400">View and manage all notifications</p>
         </div>
         <div className="flex gap-2">
           <select
@@ -127,7 +127,7 @@ const Notifications = () => {
                         {getIcon(notification.type)}
                       </div>
                       <div className="flex-1">
-                        <h3 className={`font-semibold mb-1 ${notification.is_read ? 'text-gray-600' : 'text-gray-800'}`}>
+                        <h3 className={`font-semibold mb-1 ${notification.is_read ? 'text-gray-600 dark:text-gray-400' : 'text-gray-800 dark:text-gray-100'}`}>
                           {notification.title}
                         </h3>
                         <p className={`text-sm ${notification.is_read ? 'text-gray-500' : 'text-gray-700'}`}>

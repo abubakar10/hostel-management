@@ -246,7 +246,7 @@ const Hostels = () => {
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Hostel Name *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Hostel Name *</label>
                 <input
                   type="text"
                   value={formData.name}
@@ -256,7 +256,7 @@ const Hostels = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Address</label>
                 <textarea
                   value={formData.address}
                   onChange={(e) => setFormData({ ...formData, address: e.target.value })}
@@ -266,7 +266,7 @@ const Hostels = () => {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone</label>
                   <input
                     type="tel"
                     value={formData.phone}
@@ -275,7 +275,7 @@ const Hostels = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
                   <input
                     type="email"
                     value={formData.email}
@@ -286,7 +286,7 @@ const Hostels = () => {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Total Rooms</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Total Rooms</label>
                   <input
                     type="number"
                     value={formData.total_rooms}
@@ -296,7 +296,7 @@ const Hostels = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Total Capacity</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Total Capacity</label>
                   <input
                     type="number"
                     value={formData.total_capacity}
@@ -307,7 +307,7 @@ const Hostels = () => {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
                 <select
                   value={formData.status}
                   onChange={(e) => setFormData({ ...formData, status: e.target.value })}

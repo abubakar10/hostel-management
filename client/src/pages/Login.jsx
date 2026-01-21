@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { motion } from 'framer-motion'
-import { Building2 } from 'lucide-react'
+import { Building2, GraduationCap, UserCog } from 'lucide-react'
 
 const Login = () => {
   const [username, setUsername] = useState('')
@@ -17,10 +17,16 @@ const Login = () => {
     setError('')
     setLoading(true)
 
+    // Try to login - the login function will automatically detect user type
     const result = await login(username, password)
     
     if (result.success) {
-      navigate('/dashboard')
+      // Redirect based on user role
+      if (result.user?.role === 'student') {
+        navigate('/student/dashboard')
+      } else {
+        navigate('/dashboard')
+      }
     } else {
       setError(result.error)
     }
@@ -46,6 +52,16 @@ const Login = () => {
           </motion.div>
           <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">Hostel Management</h1>
           <p className="text-gray-600 dark:text-gray-400">Sign in to your account</p>
+          <div className="mt-4 flex items-center justify-center gap-4 text-xs text-gray-500 dark:text-gray-400">
+            <div className="flex items-center gap-1">
+              <UserCog size={14} />
+              <span>Admin</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <GraduationCap size={14} />
+              <span>Student</span>
+            </div>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -61,7 +77,7 @@ const Login = () => {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Username or Email
+              Username, Student ID, or Email
             </label>
             <input
               type="text"
@@ -69,7 +85,7 @@ const Login = () => {
               onChange={(e) => setUsername(e.target.value)}
               className="input-field"
               required
-              placeholder="Enter your username"
+              placeholder="Enter your username, student ID, or email"
             />
           </div>
 
@@ -99,12 +115,9 @@ const Login = () => {
         </form>
 
         <div className="mt-6 text-center">
-          <a
-            href="/student/login"
-            className="text-sm text-primary-600 dark:text-primary-400 hover:underline"
-          >
-            Student Login
-          </a>
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            Login automatically detects your account type (Admin, Student, or Super Admin)
+          </p>
         </div>
       </motion.div>
     </div>

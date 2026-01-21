@@ -51,7 +51,7 @@ const StudentLayout = () => {
 
   const handleLogout = () => {
     logout()
-    navigate('/student/login')
+    navigate('/login')
   }
 
   return (

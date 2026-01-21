@@ -343,10 +343,10 @@ const Maintenance = () => {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto modal-content"
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto modal-content"
             >
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-800">
+                <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">
                   {editingItem ? 'Update Maintenance Request' : 'New Maintenance Request'}
                 </h2>
                 <button
@@ -365,7 +365,7 @@ const Maintenance = () => {
                   <>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Status *</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status *</label>
                         <select
                           value={updateData.status}
                           onChange={(e) => setUpdateData({ ...updateData, status: e.target.value })}
@@ -379,7 +379,7 @@ const Maintenance = () => {
                         </select>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Assign To</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Assign To</label>
                         <select
                           value={updateData.assigned_to}
                           onChange={(e) => setUpdateData({ ...updateData, assigned_to: e.target.value })}
@@ -394,7 +394,7 @@ const Maintenance = () => {
                         </select>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Cost (RS)</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Cost (RS)</label>
                         <input
                           type="number"
                           step="0.01"
@@ -405,7 +405,7 @@ const Maintenance = () => {
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Completed Date</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Completed Date</label>
                         <input
                           type="date"
                           value={updateData.completed_date}
@@ -419,7 +419,7 @@ const Maintenance = () => {
                   <>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Room *</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Room *</label>
                         <select
                           value={formData.room_id}
                           onChange={(e) => setFormData({ ...formData, room_id: e.target.value })}
@@ -435,7 +435,7 @@ const Maintenance = () => {
                         </select>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Requested By</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Requested By</label>
                         <select
                           value={formData.requested_by}
                           onChange={(e) => setFormData({ ...formData, requested_by: e.target.value })}
@@ -450,7 +450,7 @@ const Maintenance = () => {
                         </select>
                       </div>
                       <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Title *</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Title *</label>
                         <input
                           type="text"
                           value={formData.title}
@@ -460,7 +460,7 @@ const Maintenance = () => {
                         />
                       </div>
                       <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Description *</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description *</label>
                         <textarea
                           value={formData.description}
                           onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -470,7 +470,7 @@ const Maintenance = () => {
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Priority</label>
                         <select
                           value={formData.priority}
                           onChange={(e) => setFormData({ ...formData, priority: e.target.value })}

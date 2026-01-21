@@ -296,7 +296,7 @@ const Mess = () => {
               const menu = menus.find(m => m.meal_type === mealType && m.date === selectedDate)
               return (
                 <div key={mealType} className="border rounded-lg p-4">
-                  <h3 className="font-semibold text-gray-800 mb-2 capitalize">{mealType}</h3>
+                  <h3 className="font-semibold text-gray-800 dark:text-gray-100 mb-2 capitalize">{mealType}</h3>
                   {menu ? (
                     <div>
                       <ul className="list-disc list-inside text-sm text-gray-600 mb-2">

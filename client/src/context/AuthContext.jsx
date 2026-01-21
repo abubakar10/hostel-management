@@ -25,16 +25,51 @@ export const AuthProvider = ({ children }) => {
     setLoading(false)
   }, [])
 
-  const login = async (username, password, userType = 'admin') => {
+  const login = async (username, password, userType = null) => {
     try {
-      const response = await api.post('/api/auth/login', { username, password, userType })
-      const { token, user } = response.data
-      
-      localStorage.setItem('token', token)
-      localStorage.setItem('user', JSON.stringify(user))
-      setUser(user)
-      
-      return { success: true }
+      // If userType is not specified, try admin first, then student
+      if (!userType) {
+        // Try admin/staff login first
+        try {
+          const response = await api.post('/api/auth/login', { username, password, userType: 'admin' })
+          const { token, user } = response.data
+          
+          localStorage.setItem('token', token)
+          localStorage.setItem('user', JSON.stringify(user))
+          setUser(user)
+          
+          return { success: true, user }
+        } catch (adminError) {
+          // If admin login fails, try student login
+          try {
+            const response = await api.post('/api/auth/login', { username, password, userType: 'student' })
+            const { token, user } = response.data
+            
+            localStorage.setItem('token', token)
+            localStorage.setItem('user', JSON.stringify(user))
+            setUser(user)
+            
+            return { success: true, user }
+          } catch (studentError) {
+            // Both failed, return the most specific error
+            const errorMessage = studentError.response?.data?.error || adminError.response?.data?.error || 'Invalid credentials'
+            return {
+              success: false,
+              error: errorMessage
+            }
+          }
+        }
+      } else {
+        // UserType specified, use it directly
+        const response = await api.post('/api/auth/login', { username, password, userType })
+        const { token, user } = response.data
+        
+        localStorage.setItem('token', token)
+        localStorage.setItem('user', JSON.stringify(user))
+        setUser(user)
+        
+        return { success: true, user }
+      }
     } catch (error) {
       return {
         success: false,

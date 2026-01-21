@@ -292,10 +292,10 @@ const Visitors = () => {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto modal-content"
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto modal-content"
             >
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-800">
+                <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">
                   {editingVisitor ? 'Edit Visitor' : 'Check In Visitor'}
                 </h2>
                 <button
@@ -312,7 +312,7 @@ const Visitors = () => {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Student</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Student</label>
                     <select
                       value={formData.student_id}
                       onChange={(e) => setFormData({ ...formData, student_id: e.target.value })}
@@ -327,7 +327,7 @@ const Visitors = () => {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Visitor Name *</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Visitor Name *</label>
                     <input
                       type="text"
                       value={formData.visitor_name}
@@ -337,7 +337,7 @@ const Visitors = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone</label>
                     <input
                       type="tel"
                       value={formData.visitor_phone}
@@ -346,7 +346,7 @@ const Visitors = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">ID Type</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ID Type</label>
                     <select
                       value={formData.visitor_id_type}
                       onChange={(e) => setFormData({ ...formData, visitor_id_type: e.target.value })}
@@ -376,7 +376,7 @@ const Visitors = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Relationship</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Relationship</label>
                     <select
                       value={formData.relationship}
                       onChange={(e) => setFormData({ ...formData, relationship: e.target.value })}
@@ -391,7 +391,7 @@ const Visitors = () => {
                     </select>
                   </div>
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Purpose</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Purpose</label>
                     <textarea
                       value={formData.purpose}
                       onChange={(e) => setFormData({ ...formData, purpose: e.target.value })}

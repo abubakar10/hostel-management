@@ -359,7 +359,7 @@ const Complaints = () => {
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}
             onClick={(e) => e.stopPropagation()}
-            className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto"
           >
             <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-6">
               {editingItem ? 'Edit' : 'Add New'} {activeTab === 'complaints' ? 'Complaint' : 'Maintenance Request'}
@@ -367,7 +367,7 @@ const Complaints = () => {
             {activeTab === 'complaints' ? (
               <form onSubmit={handleComplaintSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Student *</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Student *</label>
                   <select
                     value={formData.student_id}
                     onChange={(e) => setFormData({ ...formData, student_id: e.target.value })}
@@ -383,7 +383,7 @@ const Complaints = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Title *</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Title *</label>
                   <input
                     type="text"
                     value={formData.title}
@@ -393,7 +393,7 @@ const Complaints = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Description *</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description *</label>
                   <textarea
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -404,7 +404,7 @@ const Complaints = () => {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Category</label>
                     <select
                       value={formData.category}
                       onChange={(e) => setFormData({ ...formData, category: e.target.value })}
@@ -418,7 +418,7 @@ const Complaints = () => {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Priority</label>
                     <select
                       value={formData.priority}
                       onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
@@ -447,7 +447,7 @@ const Complaints = () => {
             ) : (
               <form onSubmit={handleMaintenanceSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Room *</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Room *</label>
                   <select
                     value={maintenanceData.room_id}
                     onChange={(e) => setMaintenanceData({ ...maintenanceData, room_id: e.target.value })}
@@ -463,7 +463,7 @@ const Complaints = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Requested By</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Requested By</label>
                   <select
                     value={maintenanceData.requested_by}
                     onChange={(e) => setMaintenanceData({ ...maintenanceData, requested_by: e.target.value })}
@@ -478,7 +478,7 @@ const Complaints = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Title *</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Title *</label>
                   <input
                     type="text"
                     value={maintenanceData.title}
@@ -488,7 +488,7 @@ const Complaints = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Description *</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description *</label>
                   <textarea
                     value={maintenanceData.description}
                     onChange={(e) => setMaintenanceData({ ...maintenanceData, description: e.target.value })}
