@@ -149,7 +149,7 @@ const Notifications = () => {
                       {!notification.is_read && (
                         <button
                           onClick={() => markAsRead(notification.id)}
-                          className="p-2 text-green-600 hover:bg-green-50 rounded transition-colors"
+                          className="p-2 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 rounded transition-colors"
                           title="Mark as read"
                         >
                           <Check size={18} />
@@ -157,7 +157,7 @@ const Notifications = () => {
                       )}
                       <button
                         onClick={() => deleteNotification(notification.id)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors"
+                        className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
                         title="Delete"
                       >
                         <Trash2 size={18} />

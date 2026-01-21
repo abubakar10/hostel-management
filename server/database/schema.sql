@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS room_types (
 -- Rooms
 CREATE TABLE IF NOT EXISTS rooms (
     id SERIAL PRIMARY KEY,
-    room_number VARCHAR(20) UNIQUE NOT NULL,
+    room_number VARCHAR(20) NOT NULL,
     room_type_id INTEGER REFERENCES room_types(id),
     floor INTEGER,
     capacity INTEGER NOT NULL,

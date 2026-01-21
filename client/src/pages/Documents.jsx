@@ -149,8 +149,8 @@ const Documents = () => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">Document Management</h1>
-          <p className="text-gray-600">Manage student documents</p>
+          <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">Document Management</h1>
+          <p className="text-gray-600 dark:text-gray-400">Manage student documents</p>
         </div>
         <button
           onClick={() => {
@@ -222,7 +222,7 @@ const Documents = () => {
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: 20 }}
                     transition={{ delay: index * 0.05 }}
-                    className="hover:bg-gray-50"
+                    className="hover:bg-gray-50 dark:hover:bg-gray-700"
                   >
                     <td className="table-cell">
                       {doc.student_first_name && doc.student_last_name
@@ -240,14 +240,14 @@ const Documents = () => {
                       <div className="flex gap-2">
                         <button
                           onClick={() => handleDownload(doc.id, doc.file_name)}
-                          className="p-2 text-green-600 hover:bg-green-50 rounded transition-colors"
+                          className="p-2 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 rounded transition-colors"
                           title="Download"
                         >
                           <Download size={18} />
                         </button>
                         <button
                           onClick={() => handleDelete(doc.id)}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors"
+                          className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
                           title="Delete"
                         >
                           <Trash2 size={18} />
@@ -287,13 +287,13 @@ const Documents = () => {
               className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md modal-content"
             >
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-800">Upload Document</h2>
+                <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Upload Document</h2>
                 <button
                   onClick={() => {
                     setShowModal(false)
                     resetForm()
                   }}
-                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
                 >
                   <X size={24} />
                 </button>
@@ -333,7 +333,7 @@ const Documents = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">File *</label>
-                  <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
+                  <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600">
                     <div className="flex flex-col items-center justify-center pt-5 pb-6">
                       <Upload className="w-8 h-8 mb-2 text-gray-500" />
                       <p className="mb-2 text-sm text-gray-500">

@@ -182,8 +182,8 @@ const Complaints = () => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">Complaints & Maintenance</h1>
-          <p className="text-gray-600">Manage complaints and maintenance requests</p>
+          <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">Complaints & Maintenance</h1>
+          <p className="text-gray-600 dark:text-gray-400">Manage complaints and maintenance requests</p>
         </div>
         <button
           onClick={() => {
@@ -204,7 +204,7 @@ const Complaints = () => {
           className={`px-4 py-2 font-medium transition-colors border-b-2 ${
             activeTab === 'complaints'
               ? 'border-primary-600 text-primary-600'
-              : 'border-transparent text-gray-600 hover:text-gray-800'
+              : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
           }`}
         >
           <AlertCircle size={20} className="inline mr-2" />
@@ -215,7 +215,7 @@ const Complaints = () => {
           className={`px-4 py-2 font-medium transition-colors border-b-2 ${
             activeTab === 'maintenance'
               ? 'border-primary-600 text-primary-600'
-              : 'border-transparent text-gray-600 hover:text-gray-800'
+              : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
           }`}
         >
           <Wrench size={20} className="inline mr-2" />
@@ -285,7 +285,7 @@ const Complaints = () => {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.05 }}
-                    className="hover:bg-gray-50"
+                    className="hover:bg-gray-50 dark:hover:bg-gray-700"
                   >
                     <td className="table-cell font-medium">{item.title}</td>
                     {activeTab === 'complaints' ? (
@@ -329,7 +329,7 @@ const Complaints = () => {
                     <td className="table-cell">
                       <button
                         onClick={() => handleEdit(item)}
-                        className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                        className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
                       >
                         <Edit size={18} />
                       </button>
@@ -361,7 +361,7 @@ const Complaints = () => {
             onClick={(e) => e.stopPropagation()}
             className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto"
           >
-            <h2 className="text-2xl font-bold text-gray-800 mb-6">
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-6">
               {editingItem ? 'Edit' : 'Add New'} {activeTab === 'complaints' ? 'Complaint' : 'Maintenance Request'}
             </h2>
             {activeTab === 'complaints' ? (

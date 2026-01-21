@@ -122,8 +122,8 @@ const Hostels = () => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">Hostel Management</h1>
-          <p className="text-gray-600">Manage all hostels in the system</p>
+          <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">Hostel Management</h1>
+          <p className="text-gray-600 dark:text-gray-400">Manage all hostels in the system</p>
         </div>
         <button
           onClick={() => {
@@ -157,7 +157,7 @@ const Hostels = () => {
                     <Building2 size={24} className="text-primary-600" />
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold text-gray-800">{hostel.name}</h3>
+                    <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">{hostel.name}</h3>
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                       hostel.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                     }`}>
@@ -168,13 +168,13 @@ const Hostels = () => {
                 <div className="flex gap-2">
                   <button
                     onClick={() => handleEdit(hostel)}
-                    className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                    className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
                   >
                     <Edit size={18} />
                   </button>
                   <button
                     onClick={() => handleDelete(hostel.id)}
-                    className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors"
+                    className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
                   >
                     <Trash2 size={18} />
                   </button>
@@ -187,32 +187,32 @@ const Hostels = () => {
 
               <div className="grid grid-cols-2 gap-4 pt-4 border-t">
                 <div>
-                  <div className="flex items-center gap-2 text-gray-600 text-sm mb-1">
+                  <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 text-sm mb-1">
                     <Users size={16} />
                     Students
                   </div>
-                  <p className="text-lg font-bold text-gray-800">{stats[hostel.id]?.students || 0}</p>
+                  <p className="text-lg font-bold text-gray-800 dark:text-gray-100">{stats[hostel.id]?.students || 0}</p>
                 </div>
                 <div>
-                  <div className="flex items-center gap-2 text-gray-600 text-sm mb-1">
+                  <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 text-sm mb-1">
                     <Home size={16} />
                     Rooms
                   </div>
-                  <p className="text-lg font-bold text-gray-800">{stats[hostel.id]?.rooms || 0}</p>
+                  <p className="text-lg font-bold text-gray-800 dark:text-gray-100">{stats[hostel.id]?.rooms || 0}</p>
                 </div>
                 <div>
-                  <div className="flex items-center gap-2 text-gray-600 text-sm mb-1">
+                  <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 text-sm mb-1">
                     <Users size={16} />
                     Staff
                   </div>
-                  <p className="text-lg font-bold text-gray-800">{stats[hostel.id]?.staff || 0}</p>
+                  <p className="text-lg font-bold text-gray-800 dark:text-gray-100">{stats[hostel.id]?.staff || 0}</p>
                 </div>
                 <div>
-                  <div className="flex items-center gap-2 text-gray-600 text-sm mb-1">
+                  <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 text-sm mb-1">
                     <DollarSign size={16} />
                     Revenue
                   </div>
-                  <p className="text-lg font-bold text-gray-800">RS{stats[hostel.id]?.revenue?.toLocaleString() || 0}</p>
+                  <p className="text-lg font-bold text-gray-800 dark:text-gray-100">RS{stats[hostel.id]?.revenue?.toLocaleString() || 0}</p>
                 </div>
               </div>
             </motion.div>
@@ -239,7 +239,7 @@ const Hostels = () => {
             className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto"
           >
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-800">
+              <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">
                 {editingHostel ? 'Edit Hostel' : 'Add New Hostel'}
               </h2>
             </div>

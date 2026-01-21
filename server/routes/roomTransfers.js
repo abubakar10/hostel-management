@@ -118,27 +118,62 @@ router.put('/:id', authenticateToken, async (req, res) => {
 
     const transferData = transfer.rows[0];
 
-    // If approving, update room occupancy
+    // If approving, update room occupancy and status
     if (status === 'approved') {
-      // Decrease occupancy in from_room
-      if (transferData.from_room_id) {
-        await pool.query(
-          'UPDATE rooms SET current_occupancy = GREATEST(0, current_occupancy - 1) WHERE id = $1',
-          [transferData.from_room_id]
-        );
-      }
-
-      // Increase occupancy in to_room
-      await pool.query(
-        'UPDATE rooms SET current_occupancy = current_occupancy + 1 WHERE id = $1',
-        [transferData.to_room_id]
-      );
-
       // Update student's room_id
       await pool.query(
         'UPDATE students SET room_id = $1 WHERE id = $2',
         [transferData.to_room_id, transferData.student_id]
       );
+
+      // Helper function to update room status
+      const updateRoomStatus = async (roomId) => {
+        try {
+          const roomInfo = await pool.query(`
+            SELECT r.capacity, r.status, COUNT(s.id) as occupancy_count
+            FROM rooms r
+            LEFT JOIN students s ON r.id = s.room_id AND s.status = 'active'
+            WHERE r.id = $1
+            GROUP BY r.id, r.capacity, r.status
+          `, [roomId]);
+          
+          if (roomInfo.rows.length > 0) {
+            const capacity = parseInt(roomInfo.rows[0].capacity || 0);
+            const occupancy = parseInt(roomInfo.rows[0].occupancy_count || 0);
+            const currentStatus = roomInfo.rows[0].status;
+            
+            // Preserve maintenance status if set
+            if (currentStatus === 'maintenance') {
+              await pool.query(
+                'UPDATE rooms SET current_occupancy = $1 WHERE id = $2',
+                [occupancy, roomId]
+              );
+              return;
+            }
+            
+            // Calculate status based on occupancy
+            let status = 'available';
+            if (occupancy >= capacity && capacity > 0) {
+              status = 'occupied';
+            } else if (occupancy > 0 && occupancy < capacity) {
+              status = 'partially_occupied';
+            }
+            
+            await pool.query(
+              'UPDATE rooms SET current_occupancy = $1, status = $2 WHERE id = $3',
+              [occupancy, status, roomId]
+            );
+          }
+        } catch (error) {
+          console.error('Error updating room status:', error);
+        }
+      };
+
+      // Update status for both from_room and to_room
+      if (transferData.from_room_id) {
+        await updateRoomStatus(transferData.from_room_id);
+      }
+      await updateRoomStatus(transferData.to_room_id);
     }
 
     // Update transfer request

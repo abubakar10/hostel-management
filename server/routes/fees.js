@@ -46,6 +46,62 @@ router.get('/', authenticateToken, setHostelContext, async (req, res) => {
   }
 });
 
+// Get calculated fee amount for a student based on room type
+router.get('/calculate/:student_id', authenticateToken, async (req, res) => {
+  try {
+    const { student_id } = req.params;
+    
+    // Get student's room and room type
+    const result = await pool.query(`
+      SELECT 
+        r.id as room_id,
+        r.room_number,
+        rt.id as room_type_id,
+        rt.type_name as room_type_name,
+        rt.price_per_month
+      FROM students s
+      LEFT JOIN rooms r ON s.room_id = r.id
+      LEFT JOIN room_types rt ON r.room_type_id = rt.id
+      WHERE s.id = $1
+    `, [student_id]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Student not found' });
+    }
+    
+    const studentRoom = result.rows[0];
+    
+    if (!studentRoom.room_id) {
+      return res.json({
+        has_room: false,
+        message: 'Student does not have a room assigned',
+        calculated_amount: null
+      });
+    }
+    
+    if (!studentRoom.price_per_month) {
+      return res.json({
+        has_room: true,
+        room_number: studentRoom.room_number,
+        room_type: studentRoom.room_type_name,
+        message: 'Room type does not have a price set',
+        calculated_amount: null
+      });
+    }
+    
+    res.json({
+      has_room: true,
+      room_id: studentRoom.room_id,
+      room_number: studentRoom.room_number,
+      room_type_id: studentRoom.room_type_id,
+      room_type: studentRoom.room_type_name,
+      calculated_amount: parseFloat(studentRoom.price_per_month)
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Get fee by ID
 router.get('/:id', authenticateToken, async (req, res) => {
   try {
@@ -83,12 +139,40 @@ router.post('/', authenticateToken, setHostelContext, async (req, res) => {
       return res.status(400).json({ error: 'Hostel ID is required' });
     }
 
+    // Auto-calculate amount for hostel fees based on room type
+    let finalAmount = parseFloat(amount || 0);
+    if (fee_type === 'hostel' && student_id) {
+      // Get student's room and room type
+      const studentRoom = await pool.query(`
+        SELECT r.room_type_id, rt.price_per_month
+        FROM students s
+        LEFT JOIN rooms r ON s.room_id = r.id
+        LEFT JOIN room_types rt ON r.room_type_id = rt.id
+        WHERE s.id = $1
+      `, [student_id]);
+
+      if (studentRoom.rows.length > 0 && studentRoom.rows[0].price_per_month) {
+        // Use room type price if student has a room assigned
+        finalAmount = parseFloat(studentRoom.rows[0].price_per_month);
+      } else if (!amount || amount === '0' || amount === '') {
+        // If no room assigned and no amount provided, return error
+        return res.status(400).json({ 
+          error: 'Student does not have a room assigned. Please assign a room first or enter a manual amount.' 
+        });
+      }
+      // If amount is provided, use it (allows manual override)
+    }
+
+    if (finalAmount <= 0) {
+      return res.status(400).json({ error: 'Fee amount must be greater than 0' });
+    }
+
     const receiptNumber = `REC-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
 
     const result = await pool.query(
       `INSERT INTO fees (student_id, fee_type, amount, due_date, payment_method, receipt_number, status, hostel_id)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
-      [student_id, fee_type, amount, due_date, payment_method, receiptNumber, 'pending', finalHostelId]
+      [student_id, fee_type, finalAmount, due_date, payment_method, receiptNumber, 'pending', finalHostelId]
     );
 
     res.status(201).json(result.rows[0]);

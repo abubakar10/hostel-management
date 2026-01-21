@@ -25,6 +25,33 @@ ALTER TABLE students ADD COLUMN IF NOT EXISTS hostel_id INTEGER REFERENCES hoste
 -- Add hostel_id to rooms table
 ALTER TABLE rooms ADD COLUMN IF NOT EXISTS hostel_id INTEGER REFERENCES hostels(id) ON DELETE CASCADE;
 
+-- Drop existing unique constraint on room_number if it exists (for single-hostel setups)
+DO $$
+DECLARE
+    constraint_name TEXT;
+BEGIN
+    SELECT conname INTO constraint_name
+    FROM pg_constraint
+    WHERE conrelid = 'rooms'::regclass
+    AND contype = 'u'
+    AND array_length(conkey, 1) = 1
+    AND conkey[1] = (
+        SELECT attnum 
+        FROM pg_attribute 
+        WHERE attrelid = 'rooms'::regclass 
+        AND attname = 'room_number'
+    );
+    
+    IF constraint_name IS NOT NULL THEN
+        EXECUTE format('ALTER TABLE rooms DROP CONSTRAINT IF EXISTS %I', constraint_name);
+    END IF;
+END $$;
+
+-- Add composite unique constraint: room numbers must be unique per hostel
+ALTER TABLE rooms 
+ADD CONSTRAINT rooms_hostel_room_number_unique 
+UNIQUE (hostel_id, room_number);
+
 -- Add hostel_id to staff table
 ALTER TABLE staff ADD COLUMN IF NOT EXISTS hostel_id INTEGER REFERENCES hostels(id) ON DELETE CASCADE;
 

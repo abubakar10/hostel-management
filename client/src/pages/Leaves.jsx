@@ -186,8 +186,8 @@ const Leaves = () => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">Leave Management</h1>
-          <p className="text-gray-600">Manage student leave requests</p>
+          <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">Leave Management</h1>
+          <p className="text-gray-600 dark:text-gray-400">Manage student leave requests</p>
         </div>
         <button
           onClick={() => {
@@ -247,7 +247,7 @@ const Leaves = () => {
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: 20 }}
                     transition={{ delay: index * 0.05 }}
-                    className="hover:bg-gray-50"
+                    className="hover:bg-gray-50 dark:hover:bg-gray-700"
                   >
                     <td className="table-cell">
                       {leave.student_first_name && leave.student_last_name
@@ -277,14 +277,14 @@ const Leaves = () => {
                           <>
                             <button
                               onClick={() => handleApprove(leave.id)}
-                              className="p-2 text-green-600 hover:bg-green-50 rounded transition-colors"
+                              className="p-2 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 rounded transition-colors"
                               title="Approve"
                             >
                               <CheckCircle size={18} />
                             </button>
                             <button
                               onClick={() => handleReject(leave.id)}
-                              className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors"
+                              className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
                               title="Reject"
                             >
                               <XCircle size={18} />
@@ -294,7 +294,7 @@ const Leaves = () => {
                         {leave.status === 'pending' && (
                           <button
                             onClick={() => handleEdit(leave)}
-                            className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                            className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
                             title="Edit"
                           >
                             <Edit size={18} />
@@ -342,7 +342,7 @@ const Leaves = () => {
               className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto modal-content"
             >
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-800">
+                <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">
                   {editingLeave ? 'Edit Leave Request' : 'New Leave Request'}
                 </h2>
                 <button
@@ -350,7 +350,7 @@ const Leaves = () => {
                     setShowModal(false)
                     resetForm()
                   }}
-                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
                 >
                   <X size={24} />
                 </button>
@@ -389,23 +389,35 @@ const Leaves = () => {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Start Date *</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Start Date *</label>
                     <input
                       type="date"
                       value={formData.start_date}
                       onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
                       className="input-field"
                       required
+                      onInvalid={(e) => {
+                        e.target.setCustomValidity('Please select a start date')
+                      }}
+                      onInput={(e) => {
+                        e.target.setCustomValidity('')
+                      }}
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">End Date *</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">End Date *</label>
                     <input
                       type="date"
                       value={formData.end_date}
                       onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
                       className="input-field"
                       required
+                      onInvalid={(e) => {
+                        e.target.setCustomValidity('Please select an end date')
+                      }}
+                      onInput={(e) => {
+                        e.target.setCustomValidity('')
+                      }}
                     />
                   </div>
                   <div className="md:col-span-2">

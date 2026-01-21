@@ -177,6 +177,12 @@ const StudentLeaves = () => {
                       onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
                       className="input-field"
                       required
+                      onInvalid={(e) => {
+                        e.target.setCustomValidity('Please select a start date')
+                      }}
+                      onInput={(e) => {
+                        e.target.setCustomValidity('')
+                      }}
                     />
                   </div>
                   <div>
@@ -187,6 +193,12 @@ const StudentLeaves = () => {
                       onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
                       className="input-field"
                       required
+                      onInvalid={(e) => {
+                        e.target.setCustomValidity('Please select an end date')
+                      }}
+                      onInput={(e) => {
+                        e.target.setCustomValidity('')
+                      }}
                     />
                   </div>
                 </div>

@@ -189,8 +189,8 @@ const Maintenance = () => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">Maintenance Requests</h1>
-          <p className="text-gray-600">Manage room maintenance and repairs</p>
+          <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">Maintenance Requests</h1>
+          <p className="text-gray-600 dark:text-gray-400">Manage room maintenance and repairs</p>
         </div>
         <button
           onClick={() => {
@@ -263,7 +263,7 @@ const Maintenance = () => {
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: 20 }}
                     transition={{ delay: index * 0.05 }}
-                    className="hover:bg-gray-50"
+                    className="hover:bg-gray-50 dark:hover:bg-gray-700"
                   >
                     <td className="table-cell">
                       <div>
@@ -299,14 +299,14 @@ const Maintenance = () => {
                       <div className="flex gap-2">
                         <button
                           onClick={() => handleEdit(item)}
-                          className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                          className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
                           title="Edit"
                         >
                           <Edit size={18} />
                         </button>
                         <button
                           onClick={() => handleDelete(item.id)}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors"
+                          className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
                           title="Delete"
                         >
                           <X size={18} />
@@ -354,7 +354,7 @@ const Maintenance = () => {
                     setShowModal(false)
                     resetForm()
                   }}
-                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
                 >
                   <X size={24} />
                 </button>

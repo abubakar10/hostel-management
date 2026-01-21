@@ -104,8 +104,18 @@ const StudentFees = () => {
                   className="hover:bg-gray-50 dark:hover:bg-gray-700/50"
                 >
                   <td className="table-cell">
-                    <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400 rounded text-xs font-medium capitalize">
-                      {fee.fee_type}
+                    <span className={`px-2 py-1 rounded text-xs font-medium ${
+                      fee.fee_type === 'hostel' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400' :
+                      fee.fee_type === 'mess' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400' :
+                      fee.fee_type === 'security' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-400' :
+                      fee.fee_type === 'fine' ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400' :
+                      'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
+                    }`}>
+                      {fee.fee_type === 'security' ? 'Security Fee' :
+                       fee.fee_type === 'fine' ? 'Fine' :
+                       fee.fee_type === 'hostel' ? 'Hostel Fee' :
+                       fee.fee_type === 'mess' ? 'Mess Fee' :
+                       fee.fee_type}
                     </span>
                   </td>
                   <td className="table-cell font-semibold">RS {parseFloat(fee.amount).toLocaleString()}</td>

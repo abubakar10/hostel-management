@@ -266,8 +266,8 @@ const Students = () => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">Student Management</h1>
-          <p className="text-gray-600">Manage all student records</p>
+          <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">Student Management</h1>
+          <p className="text-gray-600 dark:text-gray-400">Manage all student records</p>
         </div>
         <button
           onClick={() => {
@@ -434,7 +434,7 @@ const Students = () => {
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: 20 }}
                       transition={{ delay: index * 0.05 }}
-                      className="hover:bg-gray-50"
+                      className="hover:bg-gray-50 dark:hover:bg-gray-700"
                     >
                       <td className="table-cell font-medium">{student.student_id}</td>
                       <td className="table-cell">{student.first_name} {student.last_name}</td>
@@ -452,13 +452,13 @@ const Students = () => {
                         <div className="flex gap-2">
                           <button
                             onClick={() => handleEdit(student)}
-                            className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                            className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
                           >
                             <Edit size={18} />
                           </button>
                           <button
                             onClick={() => handleDelete(student.id)}
-                            className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors"
+                            className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
                           >
                             <Trash2 size={18} />
                           </button>
@@ -493,7 +493,7 @@ const Students = () => {
               className="bg-white rounded-xl shadow-2xl p-4 sm:p-6 w-full max-w-full sm:max-w-md md:max-w-2xl max-h-[90vh] overflow-y-auto modal-content"
             >
               <div className="flex justify-between items-center mb-4 sm:mb-6">
-                <h2 className="text-xl sm:text-2xl font-bold text-gray-800">
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-gray-100">
                   {editingStudent ? 'Edit Student' : 'Add New Student'}
                 </h2>
                 <button
@@ -501,7 +501,7 @@ const Students = () => {
                     setShowModal(false)
                     resetForm()
                   }}
-                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
                 >
                   <X size={24} />
                 </button>
@@ -528,14 +528,22 @@ const Students = () => {
                 )}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Student ID *</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Student ID *</label>
                     <input
-                      type="text"
+                      type="number"
                       value={formData.student_id}
-                      onChange={(e) => setFormData({ ...formData, student_id: e.target.value })}
+                      onChange={(e) => {
+                        const value = e.target.value
+                        // Only allow positive integers
+                        if (value === '' || /^\d+$/.test(value)) {
+                          setFormData({ ...formData, student_id: value })
+                        }
+                      }}
                       className="input-field"
                       required
                       disabled={!!editingStudent}
+                      min="1"
+                      placeholder="Enter numeric ID"
                     />
                   </div>
                   <div>
@@ -569,12 +577,20 @@ const Students = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone</label>
                     <input
                       type="tel"
                       value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      onChange={(e) => {
+                        const value = e.target.value
+                        // Only allow numbers, spaces, +, -, and parentheses
+                        if (value === '' || /^[\d\s\+\-\(\)]+$/.test(value)) {
+                          setFormData({ ...formData, phone: value })
+                        }
+                      }}
                       className="input-field"
+                      pattern="[\d\s\+\-\(\)]+"
+                      placeholder="e.g., +92 300 1234567"
                     />
                   </div>
                   <div>

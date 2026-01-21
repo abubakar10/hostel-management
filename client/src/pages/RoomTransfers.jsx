@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import api from '../config/api'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, Edit, Search, X, CheckCircle, XCircle, Clock, Filter, ArrowRight } from 'lucide-react'
@@ -25,12 +25,32 @@ const RoomTransfers = () => {
     status: '',
     transfer_date: ''
   })
+  const [studentSearchTerm, setStudentSearchTerm] = useState('')
+  const [showStudentDropdown, setShowStudentDropdown] = useState(false)
+  const studentDropdownRef = useRef(null)
 
   useEffect(() => {
     fetchTransfers()
     fetchStudents()
     fetchRooms()
   }, [statusFilter])
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (studentDropdownRef.current && !studentDropdownRef.current.contains(event.target)) {
+        setShowStudentDropdown(false)
+      }
+    }
+
+    if (showStudentDropdown) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showStudentDropdown])
 
   const fetchTransfers = async () => {
     try {
@@ -131,7 +151,25 @@ const RoomTransfers = () => {
       to_room_id: '',
       reason: ''
     })
+    setStudentSearchTerm('')
+    setShowStudentDropdown(false)
   }
+
+  // Filter students based on search term
+  const filteredStudents = students.filter(student => {
+    if (!studentSearchTerm) return true
+    const searchLower = studentSearchTerm.toLowerCase()
+    return (
+      student.first_name?.toLowerCase().includes(searchLower) ||
+      student.last_name?.toLowerCase().includes(searchLower) ||
+      student.student_id?.toLowerCase().includes(searchLower) ||
+      student.email?.toLowerCase().includes(searchLower) ||
+      `${student.first_name} ${student.last_name}`.toLowerCase().includes(searchLower)
+    )
+  })
+
+  // Get selected student name for display
+  const selectedStudent = students.find(s => s.id === parseInt(formData.student_id))
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -168,8 +206,8 @@ const RoomTransfers = () => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">Room Transfer Requests</h1>
-          <p className="text-gray-600">Manage student room transfer requests</p>
+          <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">Room Transfer Requests</h1>
+          <p className="text-gray-600 dark:text-gray-400">Manage student room transfer requests</p>
         </div>
         <button
           onClick={() => {
@@ -259,14 +297,14 @@ const RoomTransfers = () => {
                           <>
                             <button
                               onClick={() => handleApprove(transfer.id)}
-                              className="p-2 text-green-600 hover:bg-green-50 rounded transition-colors"
+                              className="p-2 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 rounded transition-colors"
                               title="Approve"
                             >
                               <CheckCircle size={18} />
                             </button>
                             <button
                               onClick={() => handleReject(transfer.id)}
-                              className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors"
+                              className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
                               title="Reject"
                             >
                               <XCircle size={18} />
@@ -305,6 +343,8 @@ const RoomTransfers = () => {
             onClick={() => {
               setShowModal(false)
               resetForm()
+              setStudentSearchTerm('')
+              setShowStudentDropdown(false)
             }}
           >
             <motion.div
@@ -312,16 +352,16 @@ const RoomTransfers = () => {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto modal-content"
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto modal-content"
             >
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-800">New Room Transfer Request</h2>
+                <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">New Room Transfer Request</h2>
                 <button
                   onClick={() => {
                     setShowModal(false)
                     resetForm()
                   }}
-                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
                 >
                   <X size={24} />
                 </button>
@@ -329,31 +369,89 @@ const RoomTransfers = () => {
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Student *</label>
-                    <select
-                      value={formData.student_id}
-                      onChange={(e) => {
-                        const student = students.find(s => s.id === parseInt(e.target.value))
-                        setFormData({
-                          ...formData,
-                          student_id: e.target.value,
-                          from_room_id: student?.room_id || ''
-                        })
-                      }}
-                      className="input-field"
-                      required
-                    >
-                      <option value="">Select Student</option>
-                      {students.map(student => (
-                        <option key={student.id} value={student.id}>
-                          {student.first_name} {student.last_name} ({student.student_id})
-                        </option>
-                      ))}
-                    </select>
+                  <div className="relative" ref={studentDropdownRef}>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Student *</label>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                      <input
+                        type="text"
+                        placeholder="Search by name, ID, or email..."
+                        value={studentSearchTerm}
+                        onChange={(e) => {
+                          setStudentSearchTerm(e.target.value)
+                          setShowStudentDropdown(true)
+                          if (!e.target.value) {
+                            setFormData({ ...formData, student_id: '', from_room_id: '' })
+                          }
+                        }}
+                        onFocus={() => setShowStudentDropdown(true)}
+                        className="input-field pl-10 pr-10"
+                        required={!formData.student_id}
+                      />
+                      {selectedStudent && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setFormData({ ...formData, student_id: '', from_room_id: '' })
+                            setStudentSearchTerm('')
+                          }}
+                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        >
+                          <X size={18} />
+                        </button>
+                      )}
+                    </div>
+                    
+                    {showStudentDropdown && studentSearchTerm && (
+                      <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                        {filteredStudents.length > 0 ? (
+                          <>
+                            {filteredStudents.slice(0, 50).map(student => (
+                              <div
+                                key={student.id}
+                                onClick={() => {
+                                  setFormData({
+                                    ...formData,
+                                    student_id: student.id.toString(),
+                                    from_room_id: student.room_id || ''
+                                  })
+                                  setStudentSearchTerm(`${student.first_name} ${student.last_name} (${student.student_id})`)
+                                  setShowStudentDropdown(false)
+                                }}
+                                className="px-4 py-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer border-b border-gray-100 dark:border-gray-700 last:border-b-0 transition-colors"
+                              >
+                                <div className="font-medium text-gray-900 dark:text-gray-100">
+                                  {student.first_name} {student.last_name}
+                                </div>
+                                <div className="text-sm text-gray-500">
+                                  ID: {student.student_id} {student.email && `• ${student.email}`}
+                                </div>
+                              </div>
+                            ))}
+                            {filteredStudents.length > 50 && (
+                              <div className="px-4 py-2 text-xs text-gray-500 bg-gray-50 border-t border-gray-200">
+                                Showing first 50 of {filteredStudents.length} results. Refine your search for more specific results.
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <div className="px-4 py-3 text-gray-500 text-sm">
+                            No students found matching "{studentSearchTerm}"
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    
+                    {selectedStudent && !showStudentDropdown && (
+                      <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-sm">
+                        <span className="font-medium text-blue-900">
+                          Selected: {selectedStudent.first_name} {selectedStudent.last_name} ({selectedStudent.student_id})
+                        </span>
+                      </div>
+                    )}
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">From Room *</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">From Room *</label>
                     <select
                       value={formData.from_room_id}
                       onChange={(e) => setFormData({ ...formData, from_room_id: e.target.value })}
@@ -369,7 +467,7 @@ const RoomTransfers = () => {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">To Room *</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">To Room *</label>
                     <select
                       value={formData.to_room_id}
                       onChange={(e) => setFormData({ ...formData, to_room_id: e.target.value })}
@@ -388,7 +486,7 @@ const RoomTransfers = () => {
                     </select>
                   </div>
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Reason *</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Reason *</label>
                     <textarea
                       value={formData.reason}
                       onChange={(e) => setFormData({ ...formData, reason: e.target.value })}

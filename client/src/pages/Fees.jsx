@@ -14,6 +14,8 @@ const Fees = () => {
   const [selectedReceipt, setSelectedReceipt] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [filter, setFilter] = useState('all')
+  const [calculatedAmount, setCalculatedAmount] = useState(null)
+  const [roomInfo, setRoomInfo] = useState(null)
   const [formData, setFormData] = useState({
     student_id: '',
     fee_type: 'hostel',
@@ -48,6 +50,47 @@ const Fees = () => {
     }
   }
 
+  // Fetch student's room info and calculate fee when student is selected
+  const fetchStudentRoomInfo = async (studentId) => {
+    if (!studentId) {
+      setCalculatedAmount(null)
+      setRoomInfo(null)
+      return
+    }
+
+    try {
+      // Use the calculate endpoint for better performance
+      const response = await api.get(`/api/fees/calculate/${studentId}`)
+      const data = response.data
+      
+      if (data.has_room && data.calculated_amount) {
+        setRoomInfo({
+          room_number: data.room_number,
+          room_type: data.room_type,
+          price: data.calculated_amount
+        })
+        // Auto-calculate amount for hostel fees
+        if (formData.fee_type === 'hostel') {
+          setCalculatedAmount(data.calculated_amount)
+          setFormData({ ...formData, amount: data.calculated_amount.toString() })
+        }
+      } else {
+        setRoomInfo(null)
+        setCalculatedAmount(null)
+        if (formData.fee_type === 'hostel') {
+          setFormData({ ...formData, amount: '' })
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching student room info:', error)
+      setRoomInfo(null)
+      setCalculatedAmount(null)
+      if (formData.fee_type === 'hostel') {
+        setFormData({ ...formData, amount: '' })
+      }
+    }
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     try {
@@ -61,6 +104,8 @@ const Fees = () => {
         due_date: '',
         payment_method: ''
       })
+      setCalculatedAmount(null)
+      setRoomInfo(null)
       showSuccess('Fee created successfully')
     } catch (error) {
       showError(error.response?.data?.error || 'Error creating fee')
@@ -117,8 +162,8 @@ const Fees = () => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">Fee Management</h1>
-          <p className="text-gray-600">Manage hostel and mess fees</p>
+          <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">Fee Management</h1>
+          <p className="text-gray-600 dark:text-gray-400">Manage hostel and mess fees</p>
         </div>
         <div className="flex gap-2">
           {stats.overdue > 0 && (
@@ -142,20 +187,20 @@ const Fees = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="card">
-          <p className="text-gray-600 text-sm mb-1">Total Fees</p>
-          <p className="text-2xl font-bold text-gray-800">RS{stats.total.toLocaleString()}</p>
+          <p className="text-gray-600 dark:text-gray-400 text-sm mb-1">Total Fees</p>
+          <p className="text-2xl font-bold text-gray-800 dark:text-gray-100">RS{stats.total.toLocaleString()}</p>
         </div>
         <div className="card">
-          <p className="text-gray-600 text-sm mb-1">Paid</p>
-          <p className="text-2xl font-bold text-green-600">RS{stats.paid.toLocaleString()}</p>
+          <p className="text-gray-600 dark:text-gray-400 text-sm mb-1">Paid</p>
+          <p className="text-2xl font-bold text-green-600 dark:text-green-400">RS{stats.paid.toLocaleString()}</p>
         </div>
         <div className="card">
-          <p className="text-gray-600 text-sm mb-1">Pending</p>
-          <p className="text-2xl font-bold text-yellow-600">RS{stats.pending.toLocaleString()}</p>
+          <p className="text-gray-600 dark:text-gray-400 text-sm mb-1">Pending</p>
+          <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">RS{stats.pending.toLocaleString()}</p>
         </div>
         <div className="card">
-          <p className="text-gray-600 text-sm mb-1">Overdue</p>
-          <p className="text-2xl font-bold text-red-600">RS{stats.overdue.toLocaleString()}</p>
+          <p className="text-gray-600 dark:text-gray-400 text-sm mb-1">Overdue</p>
+          <p className="text-2xl font-bold text-red-600 dark:text-red-400">RS{stats.overdue.toLocaleString()}</p>
         </div>
       </div>
 
@@ -208,14 +253,24 @@ const Fees = () => {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.05 }}
-                    className="hover:bg-gray-50"
+                    className="hover:bg-gray-50 dark:hover:bg-gray-700"
                   >
                     <td className="table-cell">
                       {fee.first_name} {fee.last_name}
                     </td>
                     <td className="table-cell">
-                      <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium">
-                        {fee.fee_type}
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${
+                        fee.fee_type === 'hostel' ? 'bg-blue-100 text-blue-800' :
+                        fee.fee_type === 'mess' ? 'bg-green-100 text-green-800' :
+                        fee.fee_type === 'security' ? 'bg-purple-100 text-purple-800' :
+                        fee.fee_type === 'fine' ? 'bg-red-100 text-red-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {fee.fee_type === 'security' ? 'Security Fee' :
+                         fee.fee_type === 'fine' ? 'Fine' :
+                         fee.fee_type === 'hostel' ? 'Hostel Fee' :
+                         fee.fee_type === 'mess' ? 'Mess Fee' :
+                         fee.fee_type}
                       </span>
                     </td>
                     <td className="table-cell font-semibold">RS{parseFloat(fee.amount).toLocaleString()}</td>
@@ -237,7 +292,7 @@ const Fees = () => {
                         {fee.status === 'paid' && (
                           <button
                             onClick={() => viewReceipt(fee)}
-                            className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                            className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
                             title="View Receipt"
                           >
                             <FileText size={18} />
@@ -246,7 +301,7 @@ const Fees = () => {
                         {fee.status !== 'paid' && (
                           <button
                             onClick={() => handleMarkPaid(fee)}
-                            className="p-2 text-green-600 hover:bg-green-50 rounded transition-colors"
+                            className="p-2 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 rounded transition-colors"
                             title="Mark as Paid"
                           >
                             <CheckCircle size={18} />
@@ -268,22 +323,36 @@ const Fees = () => {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
-          onClick={() => setShowModal(false)}
+          onClick={() => {
+            setShowModal(false)
+            setCalculatedAmount(null)
+            setRoomInfo(null)
+            setFormData({
+              student_id: '',
+              fee_type: 'hostel',
+              amount: '',
+              due_date: '',
+              payment_method: ''
+            })
+          }}
         >
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}
             onClick={(e) => e.stopPropagation()}
-            className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md"
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 w-full max-w-md"
           >
-            <h2 className="text-2xl font-bold text-gray-800 mb-6">Add New Fee</h2>
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-6">Add New Fee</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Student *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Student *</label>
                 <select
                   value={formData.student_id}
-                  onChange={(e) => setFormData({ ...formData, student_id: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, student_id: e.target.value })
+                    fetchStudentRoomInfo(e.target.value)
+                  }}
                   className="input-field"
                   required
                 >
@@ -296,19 +365,53 @@ const Fees = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Fee Type *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fee Type *</label>
                 <select
                   value={formData.fee_type}
-                  onChange={(e) => setFormData({ ...formData, fee_type: e.target.value })}
+                  onChange={(e) => {
+                    const newFeeType = e.target.value
+                    setFormData({ 
+                      ...formData, 
+                      fee_type: newFeeType,
+                      // Auto-calculate amount only for hostel fees, clear for other types
+                      amount: newFeeType === 'hostel' && calculatedAmount 
+                        ? calculatedAmount.toString() 
+                        : newFeeType !== 'hostel' ? '' : formData.amount
+                    })
+                  }}
                   className="input-field"
                   required
                 >
                   <option value="hostel">Hostel Fee</option>
                   <option value="mess">Mess Fee</option>
+                  <option value="security">Security Fee</option>
+                  <option value="fine">Fine</option>
                 </select>
               </div>
+              {formData.fee_type === 'hostel' && roomInfo && (
+                <div className="p-3 bg-blue-50 border border-blue-200 rounded text-sm">
+                  <p className="text-blue-900">
+                    <span className="font-medium">Room:</span> {roomInfo.room_number} ({roomInfo.room_type})
+                  </p>
+                  <p className="text-blue-700 mt-1">
+                    <span className="font-medium">Room Type Fee:</span> RS{parseFloat(roomInfo.price).toLocaleString()}/month
+                  </p>
+                </div>
+              )}
+              {formData.fee_type === 'hostel' && !roomInfo && formData.student_id && (
+                <div className="p-3 bg-yellow-50 border border-yellow-200 rounded text-sm">
+                  <p className="text-yellow-900">
+                    ⚠️ Student does not have a room assigned. Please enter amount manually.
+                  </p>
+                </div>
+              )}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Amount *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Amount * 
+                  {formData.fee_type === 'hostel' && calculatedAmount && (
+                    <span className="text-xs text-gray-500 ml-2">(Auto-calculated from room type)</span>
+                  )}
+                </label>
                 <input
                   type="number"
                   value={formData.amount}
@@ -317,16 +420,28 @@ const Fees = () => {
                   required
                   min="0"
                   step="0.01"
+                  placeholder={formData.fee_type === 'hostel' && calculatedAmount ? calculatedAmount.toString() : 'Enter amount'}
                 />
+                {formData.fee_type === 'hostel' && calculatedAmount && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    You can override the calculated amount if needed
+                  </p>
+                )}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Due Date *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Due Date *</label>
                 <input
                   type="date"
                   value={formData.due_date}
                   onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
                   className="input-field"
                   required
+                  onInvalid={(e) => {
+                    e.target.setCustomValidity('Please select a due date')
+                  }}
+                  onInput={(e) => {
+                    e.target.setCustomValidity('')
+                  }}
                 />
               </div>
               <div className="flex gap-4 pt-4">
@@ -357,10 +472,10 @@ const Fees = () => {
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}
             onClick={(e) => e.stopPropagation()}
-            className="bg-white rounded-xl shadow-2xl p-8 w-full max-w-md"
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-8 w-full max-w-md"
           >
             <div className="text-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-800 mb-2">Payment Receipt</h2>
+              <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-2">Payment Receipt</h2>
               <p className="text-gray-600">Receipt #{selectedReceipt.receipt_number}</p>
             </div>
             <div className="space-y-3 border-t border-b py-6 my-6">

@@ -241,17 +241,17 @@ const Dashboard = () => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">Dashboard</h1>
-          <p className="text-gray-600">Welcome back, {user?.username || 'Admin'}!</p>
+          <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">Dashboard</h1>
+          <p className="text-gray-600 dark:text-gray-400">Welcome back, {user?.username || 'Admin'}!</p>
         </div>
-        <div className="text-sm text-gray-500">
+        <div className="text-sm text-gray-500 dark:text-gray-400">
           Last updated: {new Date().toLocaleTimeString()}
         </div>
       </div>
 
       {/* Quick Actions */}
       <div className="card">
-        <h2 className="text-lg font-semibold text-gray-800 mb-4">Quick Actions</h2>
+        <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">Quick Actions</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {quickActions.map((action, index) => {
             const Icon = action.icon
@@ -287,8 +287,8 @@ const Dashboard = () => {
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-gray-600 text-sm mb-1">{stat.label}</p>
-                  <p className="text-2xl font-bold text-gray-800">{stat.value}</p>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm mb-1">{stat.label}</p>
+                  <p className="text-2xl font-bold text-gray-800 dark:text-gray-100">{stat.value}</p>
                 </div>
                 <div className={`${stat.color} p-4 rounded-full`}>
                   <Icon size={24} className="text-white" />
@@ -302,25 +302,25 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Pending Fees Breakdown */}
         <div className="card">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">Top Pending Fees</h2>
+          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">Top Pending Fees</h2>
           {pendingFeesBreakdown.length > 0 ? (
             <div className="space-y-3">
               {pendingFeesBreakdown.map((item, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                   <div>
-                    <p className="font-medium text-gray-800">{item.name}</p>
-                    <p className="text-sm text-gray-500">{item.count} fee{item.count > 1 ? 's' : ''} pending</p>
+                    <p className="font-medium text-gray-800 dark:text-gray-100">{item.name}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{item.count} fee{item.count > 1 ? 's' : ''} pending</p>
                   </div>
-                  <p className="font-bold text-red-600">RS {item.amount.toLocaleString()}</p>
+                  <p className="font-bold text-red-600 dark:text-red-400">RS {item.amount.toLocaleString()}</p>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-gray-500 text-center py-4">No pending fees</p>
+            <p className="text-gray-500 dark:text-gray-400 text-center py-4">No pending fees</p>
           )}
           <button
             onClick={() => navigate('/fees')}
-            className="mt-4 text-primary-600 hover:text-primary-700 text-sm font-medium flex items-center gap-1"
+            className="mt-4 text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 text-sm font-medium flex items-center gap-1"
           >
             View All Fees <ArrowRight size={16} />
           </button>
@@ -328,19 +328,19 @@ const Dashboard = () => {
 
         {/* Recent Activities */}
         <div className="card">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">Recent Activities</h2>
+          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">Recent Activities</h2>
           {recentActivities.length > 0 ? (
             <div className="space-y-3">
               {recentActivities.map((activity, index) => {
                 const Icon = activity.icon
                 return (
-                  <div key={index} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                    <div className="p-2 bg-primary-100 rounded-full">
-                      <Icon size={16} className="text-primary-600" />
+                  <div key={index} className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <div className="p-2 bg-primary-100 dark:bg-primary-900/30 rounded-full">
+                      <Icon size={16} className="text-primary-600 dark:text-primary-400" />
                     </div>
                     <div className="flex-1">
-                      <p className="text-sm text-gray-800">{activity.message}</p>
-                      <p className="text-xs text-gray-500 mt-1">
+                      <p className="text-sm text-gray-800 dark:text-gray-100">{activity.message}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                         {activity.time.toLocaleDateString()} at {activity.time.toLocaleTimeString()}
                       </p>
                     </div>
@@ -349,7 +349,7 @@ const Dashboard = () => {
               })}
             </div>
           ) : (
-            <p className="text-gray-500 text-center py-4">No recent activities</p>
+            <p className="text-gray-500 dark:text-gray-400 text-center py-4">No recent activities</p>
           )}
         </div>
       </div>
@@ -357,20 +357,20 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Monthly Trends */}
         <div className="card">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">Monthly Trends</h2>
+          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">Monthly Trends</h2>
           {monthlyTrends.length > 0 ? (
             <div className="space-y-4">
               {monthlyTrends.map((trend, index) => (
                 <div key={index}>
                   <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm font-medium text-gray-700">{trend.month}</span>
-                    <span className="text-sm text-gray-600">
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{trend.month}</span>
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
                       RS {trend.fees.toLocaleString()} | {trend.students} students
                     </span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                     <div
-                      className="bg-primary-600 h-2 rounded-full"
+                      className="bg-primary-600 dark:bg-primary-500 h-2 rounded-full"
                       style={{ width: `${Math.min((trend.fees / Math.max(...monthlyTrends.map(t => t.fees))) * 100, 100)}%` }}
                     ></div>
                   </div>
@@ -378,34 +378,34 @@ const Dashboard = () => {
               ))}
             </div>
           ) : (
-            <p className="text-gray-500 text-center py-4">No trend data available</p>
+            <p className="text-gray-500 dark:text-gray-400 text-center py-4">No trend data available</p>
           )}
         </div>
 
         {/* Upcoming Deadlines */}
         <div className="card">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">Upcoming Deadlines</h2>
+          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">Upcoming Deadlines</h2>
           {upcomingDeadlines.length > 0 ? (
             <div className="space-y-3">
               {upcomingDeadlines.map((deadline, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg border-l-4 border-yellow-500">
+                <div key={index} className="flex items-center justify-between p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border-l-4 border-yellow-500 dark:border-yellow-400">
                   <div>
-                    <p className="font-medium text-gray-800">{deadline.title}</p>
-                    <p className="text-sm text-gray-500 flex items-center gap-1 mt-1">
+                    <p className="font-medium text-gray-800 dark:text-gray-100">{deadline.title}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1 mt-1">
                       <Calendar size={14} />
                       {deadline.date.toLocaleDateString()}
                     </p>
                   </div>
-                  <p className="font-bold text-yellow-600">RS {deadline.amount.toLocaleString()}</p>
+                  <p className="font-bold text-yellow-600 dark:text-yellow-400">RS {deadline.amount.toLocaleString()}</p>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-gray-500 text-center py-4">No upcoming deadlines</p>
+            <p className="text-gray-500 dark:text-gray-400 text-center py-4">No upcoming deadlines</p>
           )}
           <button
             onClick={() => navigate('/fees')}
-            className="mt-4 text-primary-600 hover:text-primary-700 text-sm font-medium flex items-center gap-1"
+            className="mt-4 text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 text-sm font-medium flex items-center gap-1"
           >
             View All Fees <ArrowRight size={16} />
           </button>

@@ -114,18 +114,54 @@ router.put('/:id', authenticateToken, async (req, res) => {
        course, year_of_study, room_id, status, req.params.id]
     );
 
-    // Update room occupancy
+    // Update room status for both old and new rooms
+    const updateRoomStatus = async (roomId) => {
+      try {
+        const roomInfo = await pool.query(`
+          SELECT r.capacity, r.status, COUNT(s.id) as occupancy_count
+          FROM rooms r
+          LEFT JOIN students s ON r.id = s.room_id AND s.status = 'active'
+          WHERE r.id = $1
+          GROUP BY r.id, r.capacity, r.status
+        `, [roomId]);
+        
+        if (roomInfo.rows.length > 0) {
+          const capacity = parseInt(roomInfo.rows[0].capacity || 0);
+          const occupancy = parseInt(roomInfo.rows[0].occupancy_count || 0);
+          const currentStatus = roomInfo.rows[0].status;
+          
+          // Preserve maintenance status if set
+          if (currentStatus === 'maintenance') {
+            await pool.query(
+              'UPDATE rooms SET current_occupancy = $1 WHERE id = $2',
+              [occupancy, roomId]
+            );
+            return;
+          }
+          
+          // Calculate status based on occupancy
+          let status = 'available';
+          if (occupancy >= capacity && capacity > 0) {
+            status = 'occupied';
+          } else if (occupancy > 0 && occupancy < capacity) {
+            status = 'partially_occupied';
+          }
+          
+          await pool.query(
+            'UPDATE rooms SET current_occupancy = $1, status = $2 WHERE id = $3',
+            [occupancy, status, roomId]
+          );
+        }
+      } catch (error) {
+        console.error('Error updating room status:', error);
+      }
+    };
+
     if (oldRoomId && oldRoomId !== room_id) {
-      await pool.query(
-        'UPDATE rooms SET current_occupancy = GREATEST(0, current_occupancy - 1) WHERE id = $1',
-        [oldRoomId]
-      );
+      await updateRoomStatus(oldRoomId);
     }
     if (room_id && oldRoomId !== room_id) {
-      await pool.query(
-        'UPDATE rooms SET current_occupancy = current_occupancy + 1 WHERE id = $1',
-        [room_id]
-      );
+      await updateRoomStatus(room_id);
     }
 
     res.json(result.rows[0]);
@@ -142,12 +178,51 @@ router.delete('/:id', authenticateToken, async (req, res) => {
 
     await pool.query('DELETE FROM students WHERE id = $1', [req.params.id]);
 
-    // Update room occupancy
+    // Update room status
     if (roomId) {
-      await pool.query(
-        'UPDATE rooms SET current_occupancy = GREATEST(0, current_occupancy - 1) WHERE id = $1',
-        [roomId]
-      );
+      const updateRoomStatus = async (roomId) => {
+        try {
+          const roomInfo = await pool.query(`
+            SELECT r.capacity, r.status, COUNT(s.id) as occupancy_count
+            FROM rooms r
+            LEFT JOIN students s ON r.id = s.room_id AND s.status = 'active'
+            WHERE r.id = $1
+            GROUP BY r.id, r.capacity, r.status
+          `, [roomId]);
+          
+          if (roomInfo.rows.length > 0) {
+            const capacity = parseInt(roomInfo.rows[0].capacity || 0);
+            const occupancy = parseInt(roomInfo.rows[0].occupancy_count || 0);
+            const currentStatus = roomInfo.rows[0].status;
+            
+            // Preserve maintenance status if set
+            if (currentStatus === 'maintenance') {
+              await pool.query(
+                'UPDATE rooms SET current_occupancy = $1 WHERE id = $2',
+                [occupancy, roomId]
+              );
+              return;
+            }
+            
+            // Calculate status based on occupancy
+            let status = 'available';
+            if (occupancy >= capacity && capacity > 0) {
+              status = 'occupied';
+            } else if (occupancy > 0 && occupancy < capacity) {
+              status = 'partially_occupied';
+            }
+            
+            await pool.query(
+              'UPDATE rooms SET current_occupancy = $1, status = $2 WHERE id = $3',
+              [occupancy, status, roomId]
+            );
+          }
+        } catch (error) {
+          console.error('Error updating room status:', error);
+        }
+      };
+      
+      await updateRoomStatus(roomId);
     }
 
     res.json({ message: 'Student deleted successfully' });

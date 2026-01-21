@@ -123,8 +123,8 @@ const Staff = () => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">Staff Management</h1>
-          <p className="text-gray-600">Manage wardens, cleaners, and security staff</p>
+          <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">Staff Management</h1>
+          <p className="text-gray-600 dark:text-gray-400">Manage wardens, cleaners, and security staff</p>
         </div>
         <button
           onClick={() => {
@@ -140,8 +140,8 @@ const Staff = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="card">
-          <p className="text-gray-600 text-sm mb-1">Total Staff</p>
-          <p className="text-2xl font-bold text-gray-800">{stats.total}</p>
+          <p className="text-gray-600 dark:text-gray-400 text-sm mb-1">Total Staff</p>
+          <p className="text-2xl font-bold text-gray-800 dark:text-gray-100">{stats.total}</p>
         </div>
         <div className="card">
           <div className="flex items-center gap-2 mb-1">
@@ -216,7 +216,7 @@ const Staff = () => {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.05 }}
-                    className="hover:bg-gray-50"
+                    className="hover:bg-gray-50 dark:hover:bg-gray-700"
                   >
                     <td className="table-cell font-medium">{staffMember.staff_id}</td>
                     <td className="table-cell">{staffMember.first_name} {staffMember.last_name}</td>
@@ -245,13 +245,13 @@ const Staff = () => {
                       <div className="flex gap-2">
                         <button
                           onClick={() => handleEdit(staffMember)}
-                          className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                          className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
                         >
                           <Edit size={18} />
                         </button>
                         <button
                           onClick={() => handleDelete(staffMember.id)}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors"
+                          className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
                         >
                           <Trash2 size={18} />
                         </button>
@@ -284,7 +284,7 @@ const Staff = () => {
             className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto"
           >
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-800">
+              <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">
                 {editingStaff ? 'Edit Staff' : 'Add New Staff'}
               </h2>
             </div>
@@ -292,14 +292,22 @@ const Staff = () => {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Staff ID *</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Staff ID *</label>
                   <input
-                    type="text"
+                    type="number"
                     value={formData.staff_id}
-                    onChange={(e) => setFormData({ ...formData, staff_id: e.target.value })}
+                    onChange={(e) => {
+                      const value = e.target.value
+                      // Only allow positive integers
+                      if (value === '' || /^\d+$/.test(value)) {
+                        setFormData({ ...formData, staff_id: value })
+                      }
+                    }}
                     className="input-field"
                     required
                     disabled={!!editingStaff}
+                    min="1"
+                    placeholder="Enter numeric ID"
                   />
                 </div>
                 <div>
@@ -346,12 +354,20 @@ const Staff = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone</label>
                   <input
                     type="tel"
                     value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    onChange={(e) => {
+                      const value = e.target.value
+                      // Only allow numbers, spaces, +, -, and parentheses
+                      if (value === '' || /^[\d\s\+\-\(\)]+$/.test(value)) {
+                        setFormData({ ...formData, phone: value })
+                      }
+                    }}
                     className="input-field"
+                    pattern="[\d\s\+\-\(\)]+"
+                    placeholder="e.g., +92 300 1234567"
                   />
                 </div>
                 <div>

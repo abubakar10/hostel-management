@@ -191,7 +191,7 @@ const Inventory = () => {
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: 20 }}
                     transition={{ delay: index * 0.05 }}
-                    className={`hover:bg-gray-50 ${parseInt(item.quantity) < 10 ? 'bg-yellow-50' : ''}`}
+                    className={`hover:bg-gray-50 dark:hover:bg-gray-700 ${parseInt(item.quantity) < 10 ? 'bg-yellow-50 dark:bg-yellow-900/20' : ''}`}
                   >
                     <td className="table-cell font-medium">
                       <div className="flex items-center gap-2">
@@ -214,14 +214,14 @@ const Inventory = () => {
                       <div className="flex gap-2">
                         <button
                           onClick={() => handleEdit(item)}
-                          className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                          className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
                           title="Edit"
                         >
                           <Edit size={18} />
                         </button>
                         <button
                           onClick={() => handleDelete(item.id)}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors"
+                          className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
                           title="Delete"
                         >
                           <Trash2 size={18} />
@@ -269,7 +269,7 @@ const Inventory = () => {
                     setShowModal(false)
                     resetForm()
                   }}
-                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
                 >
                   <X size={24} />
                 </button>

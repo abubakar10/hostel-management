@@ -143,8 +143,8 @@ const Visitors = () => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">Visitor Management</h1>
-          <p className="text-gray-600">Manage visitor check-in and check-out</p>
+          <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">Visitor Management</h1>
+          <p className="text-gray-600 dark:text-gray-400">Manage visitor check-in and check-out</p>
         </div>
         <button
           onClick={() => {
@@ -205,7 +205,7 @@ const Visitors = () => {
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: 20 }}
                     transition={{ delay: index * 0.05 }}
-                    className="hover:bg-gray-50"
+                    className="hover:bg-gray-50 dark:hover:bg-gray-700"
                   >
                     <td className="table-cell font-medium">{visitor.visitor_name}</td>
                     <td className="table-cell">
@@ -248,14 +248,14 @@ const Visitors = () => {
                         )}
                         <button
                           onClick={() => handleEdit(visitor)}
-                          className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                          className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
                           title="Edit"
                         >
                           <Edit size={18} />
                         </button>
                         <button
                           onClick={() => handleDelete(visitor.id)}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors"
+                          className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
                           title="Delete"
                         >
                           <X size={18} />
@@ -303,7 +303,7 @@ const Visitors = () => {
                     setShowModal(false)
                     resetForm()
                   }}
-                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
                 >
                   <X size={24} />
                 </button>
@@ -359,12 +359,20 @@ const Visitors = () => {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">ID Number</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ID Number</label>
                     <input
                       type="text"
                       value={formData.visitor_id_number}
-                      onChange={(e) => setFormData({ ...formData, visitor_id_number: e.target.value })}
+                      onChange={(e) => {
+                        const value = e.target.value
+                        // Allow numbers, dashes, and spaces for ID numbers (e.g., CNIC format: 12345-1234567-1)
+                        if (value === '' || /^[\d\s\-]+$/.test(value)) {
+                          setFormData({ ...formData, visitor_id_number: value })
+                        }
+                      }}
                       className="input-field"
+                      pattern="[\d\s\-]+"
+                      placeholder="e.g., 12345-1234567-1"
                     />
                   </div>
                   <div>

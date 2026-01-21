@@ -18,6 +18,32 @@ import {
 } from 'recharts'
 import { TrendingUp, TrendingDown, DollarSign, Calendar } from 'lucide-react'
 
+// Custom Tooltip component for dark mode
+const CustomTooltip = ({ active, payload, label }) => {
+  if (active && payload && payload.length) {
+    const isDark = document.documentElement.classList.contains('dark')
+    return (
+      <div 
+        className={`p-3 rounded-lg shadow-lg border ${
+          isDark 
+            ? 'bg-gray-800 border-gray-700 text-gray-100' 
+            : 'bg-white border-gray-200 text-gray-900'
+        }`}
+      >
+        <p className={`font-medium mb-2 ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
+          {label}
+        </p>
+        {payload.map((entry, index) => (
+          <p key={index} style={{ color: entry.color }} className="text-sm">
+            {entry.name}: RS{typeof entry.value === 'number' ? entry.value.toLocaleString() : entry.value}
+          </p>
+        ))}
+      </div>
+    )
+  }
+  return null
+}
+
 const Reports = () => {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1)
@@ -68,8 +94,8 @@ const Reports = () => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">Reports & Analytics</h1>
-          <p className="text-gray-600">Financial reports and analytics dashboard</p>
+          <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">Reports & Analytics</h1>
+          <p className="text-gray-600 dark:text-gray-400">Financial reports and analytics dashboard</p>
         </div>
         <div className="flex gap-2">
           <select
@@ -95,35 +121,35 @@ const Reports = () => {
 
       {/* Monthly Income & Expenses */}
       <div className="card">
-        <h2 className="text-xl font-bold text-gray-800 mb-4">Monthly Income & Expenses</h2>
+        <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">Monthly Income & Expenses</h2>
         {incomeExpenses && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <div className="bg-green-50 p-4 rounded-lg">
-              <p className="text-sm text-gray-600 mb-1">Hostel Income</p>
-              <p className="text-2xl font-bold text-green-600">
+            <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Hostel Income</p>
+              <p className="text-2xl font-bold text-green-600 dark:text-green-400">
                 RS{parseFloat(incomeExpenses.income.hostel_income || 0).toLocaleString()}
               </p>
             </div>
-            <div className="bg-blue-50 p-4 rounded-lg">
-              <p className="text-sm text-gray-600 mb-1">Mess Income</p>
-              <p className="text-2xl font-bold text-blue-600">
+            <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Mess Income</p>
+              <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
                 RS{parseFloat(incomeExpenses.income.mess_income || 0).toLocaleString()}
               </p>
             </div>
-            <div className="bg-red-50 p-4 rounded-lg">
-              <p className="text-sm text-gray-600 mb-1">Total Expenses</p>
-              <p className="text-2xl font-bold text-red-600">
+            <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Total Expenses</p>
+              <p className="text-2xl font-bold text-red-600 dark:text-red-400">
                 RS{incomeExpenses.net.total_expenses.toLocaleString()}
               </p>
             </div>
             <div className={`p-4 rounded-lg ${
               incomeExpenses.net.total_income - incomeExpenses.net.total_expenses >= 0
-                ? 'bg-green-50' : 'bg-red-50'
+                ? 'bg-green-50 dark:bg-green-900/20' : 'bg-red-50 dark:bg-red-900/20'
             }`}>
-              <p className="text-sm text-gray-600 mb-1">Net</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Net</p>
               <p className={`text-2xl font-bold ${
                 incomeExpenses.net.total_income - incomeExpenses.net.total_expenses >= 0
-                  ? 'text-green-600' : 'text-red-600'
+                  ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
               }`}>
                 RS{(incomeExpenses.net.total_income - incomeExpenses.net.total_expenses).toLocaleString()}
               </p>
@@ -134,13 +160,13 @@ const Reports = () => {
 
       {/* Profit/Loss Analysis */}
       <div className="card">
-        <h2 className="text-xl font-bold text-gray-800 mb-4">Profit / Loss Analysis</h2>
+        <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">Profit / Loss Analysis</h2>
         <ResponsiveContainer width="100%" height={300}>
           <LineChart data={profitLoss}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="month" tickFormatter={(value) => monthNames[value - 1]} />
             <YAxis />
-            <Tooltip formatter={(value) => `RS${value.toLocaleString()}`} />
+            <Tooltip content={<CustomTooltip />} />
             <Legend />
             <Line type="monotone" dataKey="income" stroke="#10b981" strokeWidth={2} name="Income" />
             <Line type="monotone" dataKey="expenses" stroke="#ef4444" strokeWidth={2} name="Expenses" />
@@ -152,7 +178,7 @@ const Reports = () => {
       {/* Category Breakdown */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="card">
-          <h2 className="text-xl font-bold text-gray-800 mb-4">Income by Category</h2>
+          <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">Income by Category</h2>
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
               <Pie
@@ -169,13 +195,13 @@ const Reports = () => {
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Pie>
-              <Tooltip formatter={(value) => `RS${value.toLocaleString()}`} />
+              <Tooltip content={<CustomTooltip />} />
             </PieChart>
           </ResponsiveContainer>
         </div>
 
         <div className="card">
-          <h2 className="text-xl font-bold text-gray-800 mb-4">Expenses by Category</h2>
+          <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">Expenses by Category</h2>
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
               <Pie
@@ -192,7 +218,7 @@ const Reports = () => {
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Pie>
-              <Tooltip formatter={(value) => `RS${value.toLocaleString()}`} />
+              <Tooltip content={<CustomTooltip />} />
             </PieChart>
           </ResponsiveContainer>
         </div>
@@ -200,13 +226,13 @@ const Reports = () => {
 
       {/* Monthly Comparisons */}
       <div className="card">
-        <h2 className="text-xl font-bold text-gray-800 mb-4">Monthly Comparisons</h2>
+        <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">Monthly Comparisons</h2>
         <ResponsiveContainer width="100%" height={300}>
           <BarChart data={monthlyComparison}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="month" tickFormatter={(value) => monthNames[value - 1]} />
             <YAxis />
-            <Tooltip formatter={(value) => `RS${value.toLocaleString()}`} />
+            <Tooltip content={<CustomTooltip />} />
             <Legend />
             <Bar dataKey="income" fill="#10b981" name="Income" />
             <Bar dataKey="expenses" fill="#ef4444" name="Expenses" />

@@ -199,8 +199,8 @@ const Mess = () => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">Mess Management</h1>
-          <p className="text-gray-600">Manage menus, meal attendance, and mess fees</p>
+          <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">Mess Management</h1>
+          <p className="text-gray-600 dark:text-gray-400">Manage menus, meal attendance, and mess fees</p>
         </div>
         <div className="flex gap-2">
           {activeTab === 'menu' && (
@@ -249,7 +249,7 @@ const Mess = () => {
           className={`px-4 py-2 font-medium transition-colors ${
             activeTab === 'menu'
               ? 'border-b-2 border-primary-600 text-primary-600'
-              : 'text-gray-600 hover:text-gray-800'
+              : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
           }`}
         >
           <Utensils size={18} className="inline mr-2" />
@@ -260,7 +260,7 @@ const Mess = () => {
           className={`px-4 py-2 font-medium transition-colors ${
             activeTab === 'attendance'
               ? 'border-b-2 border-primary-600 text-primary-600'
-              : 'text-gray-600 hover:text-gray-800'
+              : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
           }`}
         >
           <Users size={18} className="inline mr-2" />
@@ -271,7 +271,7 @@ const Mess = () => {
           className={`px-4 py-2 font-medium transition-colors ${
             activeTab === 'fees'
               ? 'border-b-2 border-primary-600 text-primary-600'
-              : 'text-gray-600 hover:text-gray-800'
+              : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
           }`}
         >
           <DollarSign size={18} className="inline mr-2" />
@@ -283,7 +283,7 @@ const Mess = () => {
       {activeTab === 'menu' && (
         <div className="card">
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Select Date</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Select Date</label>
             <input
               type="date"
               value={selectedDate}
@@ -345,7 +345,7 @@ const Mess = () => {
       {activeTab === 'attendance' && (
         <div className="card">
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Select Date</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Select Date</label>
             <input
               type="date"
               value={selectedDate}
@@ -478,18 +478,24 @@ const Mess = () => {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md modal-content"
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 w-full max-w-md modal-content"
             >
-              <h2 className="text-2xl font-bold text-gray-800 mb-4">Add Menu</h2>
+              <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-4">Add Menu</h2>
               <form onSubmit={handleMenuSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Date *</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Date *</label>
                   <input
                     type="date"
                     value={menuFormData.date}
                     onChange={(e) => setMenuFormData({ ...menuFormData, date: e.target.value })}
                     className="input-field"
                     required
+                    onInvalid={(e) => {
+                      e.target.setCustomValidity('Please select a date')
+                    }}
+                    onInput={(e) => {
+                      e.target.setCustomValidity('')
+                    }}
                   />
                 </div>
                 <div>
@@ -506,7 +512,7 @@ const Mess = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Menu Items *</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Menu Items *</label>
                   <textarea
                     value={typeof menuFormData.menu_items === 'string' ? menuFormData.menu_items : menuFormData.menu_items.join(', ')}
                     onChange={(e) => setMenuFormData({ ...menuFormData, menu_items: e.target.value })}
@@ -555,23 +561,29 @@ const Mess = () => {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto modal-content"
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto modal-content"
             >
-              <h2 className="text-2xl font-bold text-gray-800 mb-4">Mark Meal Attendance</h2>
+              <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-4">Mark Meal Attendance</h2>
               <form onSubmit={handleAttendanceSubmit} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Date *</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Date *</label>
                     <input
                       type="date"
                       value={attendanceFormData.date}
                       onChange={(e) => setAttendanceFormData({ ...attendanceFormData, date: e.target.value })}
                       className="input-field"
                       required
+                      onInvalid={(e) => {
+                        e.target.setCustomValidity('Please select a date')
+                      }}
+                      onInput={(e) => {
+                        e.target.setCustomValidity('')
+                      }}
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Meal Type *</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Meal Type *</label>
                     <select
                       value={attendanceFormData.meal_type}
                       onChange={(e) => setAttendanceFormData({ ...attendanceFormData, meal_type: e.target.value })}
@@ -585,12 +597,12 @@ const Mess = () => {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Select Students</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Select Students</label>
                   <div className="max-h-64 overflow-y-auto border rounded-lg p-2">
                     {students.map(student => {
                       const record = attendanceFormData.records.find(r => r.student_id === student.id)
                       return (
-                        <div key={student.id} className="flex items-center justify-between p-2 hover:bg-gray-50 rounded">
+                        <div key={student.id} className="flex items-center justify-between p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded">
                           <span>{student.first_name} {student.last_name}</span>
                           <div className="flex gap-2">
                             <button
@@ -660,12 +672,12 @@ const Mess = () => {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md modal-content"
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 w-full max-w-md modal-content"
             >
-              <h2 className="text-2xl font-bold text-gray-800 mb-4">Add Mess Fee</h2>
+              <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-4">Add Mess Fee</h2>
               <form onSubmit={handleFeeSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Student *</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Student *</label>
                   <select
                     value={feeFormData.student_id}
                     onChange={(e) => setFeeFormData({ ...feeFormData, student_id: e.target.value })}
@@ -682,7 +694,7 @@ const Mess = () => {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Month *</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Month *</label>
                     <select
                       value={feeFormData.month}
                       onChange={(e) => setFeeFormData({ ...feeFormData, month: parseInt(e.target.value) })}
@@ -695,7 +707,7 @@ const Mess = () => {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Year *</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Year *</label>
                     <input
                       type="number"
                       value={feeFormData.year}
@@ -708,7 +720,7 @@ const Mess = () => {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Amount (RS) *</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Amount (RS) *</label>
                   <input
                     type="number"
                     step="0.01"
