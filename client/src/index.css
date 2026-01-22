@@ -160,8 +160,8 @@ select:focus {
   
   /* Better touch targets on mobile */
   button, a, label[role="button"] {
-    min-height: 44px;
-    min-width: 44px;
+    min-height: 48px;
+    min-width: 48px;
   }
   
   /* Prevent text size adjustment on iOS */
@@ -172,7 +172,7 @@ select:focus {
   /* Better modal spacing on mobile */
   .modal-content {
     padding: 1rem !important;
-    max-height: 90vh;
+    max-height: 95vh;
     margin: 0.5rem;
     border-radius: 0.75rem;
   }
@@ -191,14 +191,15 @@ select:focus {
   /* Make cards more compact on mobile */
   .card {
     padding: 1rem !important;
-    margin: 0 -0.75rem;
-    border-radius: 0.5rem;
+    margin: 0;
+    border-radius: 0.75rem;
   }
   
   /* Better button spacing */
   .btn-primary, .btn-secondary {
-    padding: 0.75rem 1rem;
-    font-size: 0.875rem;
+    padding: 0.875rem 1.25rem;
+    font-size: 0.9375rem;
+    min-height: 48px;
   }
   
   /* Responsive text sizes */
@@ -218,6 +219,20 @@ select:focus {
   /* Hide labels on very small screens, show icons */
   .hidden-mobile {
     display: none;
+  }
+  
+  /* Improve scroll behavior on mobile */
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  /* Better focus states for accessibility */
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    outline: 2px solid rgb(59, 130, 246);
+    outline-offset: 2px;
   }
 }
 
@@ -245,8 +260,8 @@ select:focus {
 @media (hover: none) and (pointer: coarse) {
   /* Larger touch targets */
   button, a, input[type="button"], input[type="submit"], label[role="button"] {
-    min-height: 44px;
-    min-width: 44px;
+    min-height: 48px;
+    min-width: 48px;
   }
   
   /* Remove hover effects on touch devices */
@@ -262,6 +277,17 @@ select:focus {
   /* Larger tap areas */
   .p-2 {
     padding: 0.75rem;
+  }
+  
+  /* Improve touch feedback */
+  button:active {
+    transform: scale(0.97);
+    transition: transform 0.1s ease;
+  }
+  
+  /* Better scroll momentum */
+  * {
+    -webkit-overflow-scrolling: touch;
   }
 }
 
@@ -287,6 +313,37 @@ select:focus {
   .table-header-cell {
     padding: 0.5rem 0.75rem;
     font-size: 0.75rem;
+  }
+  
+  /* Improve card shadows on mobile */
+  .card {
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  }
+  
+  /* Better spacing for mobile cards */
+  .space-y-3 > * + * {
+    margin-top: 0.75rem;
+  }
+  
+  .space-y-4 > * + * {
+    margin-top: 1rem;
+  }
+}
+
+/* Extra small devices (phones in portrait) */
+@media (max-width: 375px) {
+  /* Even more compact spacing */
+  .card {
+    padding: 0.875rem !important;
+  }
+  
+  h1 {
+    font-size: 1.25rem !important;
+  }
+  
+  .btn-primary, .btn-secondary {
+    font-size: 0.875rem;
+    padding: 0.75rem 1rem;
   }
 }
 

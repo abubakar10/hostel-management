@@ -130,11 +130,13 @@ router.post('/bulk', authenticateToken, async (req, res) => {
 });
 
 // Get monthly report
-router.get('/monthly/:year/:month', authenticateToken, async (req, res) => {
+router.get('/monthly/:year/:month', authenticateToken, setHostelContext, async (req, res) => {
   try {
     const { year, month } = req.params;
+    const params = [year, month];
+    let paramCount = 3;
 
-    const result = await pool.query(`
+    let query = `
       SELECT 
         s.id as student_id,
         s.first_name,
@@ -149,12 +151,24 @@ router.get('/monthly/:year/:month', authenticateToken, async (req, res) => {
         AND EXTRACT(YEAR FROM a.date) = $1 
         AND EXTRACT(MONTH FROM a.date) = $2
       WHERE s.status = 'active'
+    `;
+
+    // Filter by hostel_id (unless super_admin viewing all hostels)
+    if (req.user.role !== 'super_admin' || req.query.hostel_id) {
+      query += ` AND s.hostel_id = $${paramCount}`;
+      params.push(req.hostelId || req.query.hostel_id);
+      paramCount++;
+    }
+
+    query += `
       GROUP BY s.id, s.first_name, s.last_name, s.student_id
       ORDER BY s.first_name
-    `, [year, month]);
+    `;
 
+    const result = await pool.query(query, params);
     res.json(result.rows);
   } catch (error) {
+    console.error('Error fetching monthly attendance:', error);
     res.status(500).json({ error: error.message });
   }
 });

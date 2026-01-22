@@ -26,6 +26,7 @@ const Attendance = () => {
   const fetchStudents = async () => {
     try {
       const response = await api.get('/api/students')
+      // Students are already filtered by hostel on the backend
       setStudents(response.data.filter(s => s.status === 'active'))
     } catch (error) {
       console.error('Error fetching students:', error)

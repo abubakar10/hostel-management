@@ -231,28 +231,34 @@ const Dashboard = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      <div className="flex items-center justify-center h-64 px-2">
+        <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-primary-600 dark:border-primary-400"></div>
       </div>
     )
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">Dashboard</h1>
-          <p className="text-gray-600 dark:text-gray-400">Welcome back, {user?.username || 'Admin'}!</p>
+    <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
+        <div className="w-full sm:w-auto">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-gray-100 mb-1 sm:mb-2">
+            Dashboard
+          </h1>
+          <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
+            Welcome back, {user?.username || 'Admin'}!
+          </p>
         </div>
-        <div className="text-sm text-gray-500 dark:text-gray-400">
+        <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
           Last updated: {new Date().toLocaleTimeString()}
         </div>
       </div>
 
       {/* Quick Actions */}
-      <div className="card">
-        <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="card p-4 sm:p-6">
+        <h2 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-gray-100 mb-3 sm:mb-4">
+          Quick Actions
+        </h2>
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
           {quickActions.map((action, index) => {
             const Icon = action.icon
             return (
@@ -262,10 +268,10 @@ const Dashboard = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
                 onClick={() => navigate(action.link)}
-                className={`${action.color} text-white p-4 rounded-lg hover:opacity-90 transition-opacity flex flex-col items-center gap-2`}
+                className={`${action.color} text-white p-3 sm:p-4 rounded-lg hover:opacity-90 active:scale-95 transition-all flex flex-col items-center gap-1.5 sm:gap-2 min-h-[80px] sm:min-h-[100px] justify-center touch-manipulation`}
               >
-                <Icon size={24} />
-                <span className="text-sm font-medium">{action.label}</span>
+                <Icon size={20} className="sm:w-6 sm:h-6" />
+                <span className="text-xs sm:text-sm font-medium text-center">{action.label}</span>
               </motion.button>
             )
           })}
@@ -273,7 +279,7 @@ const Dashboard = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {statCards.map((stat, index) => {
           const Icon = stat.icon
           return (
@@ -282,16 +288,20 @@ const Dashboard = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.05 }}
-              className="card hover:scale-105 transition-transform duration-200 cursor-pointer"
+              className="card hover:scale-105 active:scale-95 transition-transform duration-200 cursor-pointer touch-manipulation p-4 sm:p-6"
               onClick={() => stat.link && navigate(stat.link)}
             >
               <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-600 dark:text-gray-400 text-sm mb-1">{stat.label}</p>
-                  <p className="text-2xl font-bold text-gray-800 dark:text-gray-100">{stat.value}</p>
+                <div className="flex-1 min-w-0">
+                  <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm mb-1 truncate">
+                    {stat.label}
+                  </p>
+                  <p className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-gray-100 truncate">
+                    {stat.value}
+                  </p>
                 </div>
-                <div className={`${stat.color} p-4 rounded-full`}>
-                  <Icon size={24} className="text-white" />
+                <div className={`${stat.color} p-3 sm:p-4 rounded-full flex-shrink-0 ml-2`}>
+                  <Icon size={20} className="sm:w-6 sm:h-6 text-white" />
                 </div>
               </div>
             </motion.div>
@@ -299,48 +309,62 @@ const Dashboard = () => {
         })}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Pending Fees Breakdown */}
-        <div className="card">
-          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">Top Pending Fees</h2>
+        <div className="card p-4 sm:p-6">
+          <h2 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-gray-100 mb-3 sm:mb-4">
+            Top Pending Fees
+          </h2>
           {pendingFeesBreakdown.length > 0 ? (
-            <div className="space-y-3">
+            <div className="space-y-2 sm:space-y-3">
               {pendingFeesBreakdown.map((item, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                  <div>
-                    <p className="font-medium text-gray-800 dark:text-gray-100">{item.name}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{item.count} fee{item.count > 1 ? 's' : ''} pending</p>
+                <div key={index} className="flex items-center justify-between p-2.5 sm:p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                  <div className="flex-1 min-w-0 pr-2">
+                    <p className="font-medium text-sm sm:text-base text-gray-800 dark:text-gray-100 truncate">
+                      {item.name}
+                    </p>
+                    <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+                      {item.count} fee{item.count > 1 ? 's' : ''} pending
+                    </p>
                   </div>
-                  <p className="font-bold text-red-600 dark:text-red-400">RS {item.amount.toLocaleString()}</p>
+                  <p className="font-bold text-sm sm:text-base text-red-600 dark:text-red-400 flex-shrink-0">
+                    RS {item.amount.toLocaleString()}
+                  </p>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-gray-500 dark:text-gray-400 text-center py-4">No pending fees</p>
+            <p className="text-gray-500 dark:text-gray-400 text-center py-4 text-sm sm:text-base">
+              No pending fees
+            </p>
           )}
           <button
             onClick={() => navigate('/fees')}
-            className="mt-4 text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 text-sm font-medium flex items-center gap-1"
+            className="mt-3 sm:mt-4 text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 text-xs sm:text-sm font-medium flex items-center gap-1 touch-manipulation min-h-[44px] sm:min-h-[36px]"
           >
-            View All Fees <ArrowRight size={16} />
+            View All Fees <ArrowRight size={14} className="sm:w-4 sm:h-4" />
           </button>
         </div>
 
         {/* Recent Activities */}
-        <div className="card">
-          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">Recent Activities</h2>
+        <div className="card p-4 sm:p-6">
+          <h2 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-gray-100 mb-3 sm:mb-4">
+            Recent Activities
+          </h2>
           {recentActivities.length > 0 ? (
-            <div className="space-y-3">
+            <div className="space-y-2 sm:space-y-3">
               {recentActivities.map((activity, index) => {
                 const Icon = activity.icon
                 return (
-                  <div key={index} className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                    <div className="p-2 bg-primary-100 dark:bg-primary-900/30 rounded-full">
-                      <Icon size={16} className="text-primary-600 dark:text-primary-400" />
+                  <div key={index} className="flex items-start gap-2 sm:gap-3 p-2.5 sm:p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <div className="p-1.5 sm:p-2 bg-primary-100 dark:bg-primary-900/30 rounded-full flex-shrink-0">
+                      <Icon size={14} className="sm:w-4 sm:h-4 text-primary-600 dark:text-primary-400" />
                     </div>
-                    <div className="flex-1">
-                      <p className="text-sm text-gray-800 dark:text-gray-100">{activity.message}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs sm:text-sm text-gray-800 dark:text-gray-100 break-words">
+                        {activity.message}
+                      </p>
+                      <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mt-1">
                         {activity.time.toLocaleDateString()} at {activity.time.toLocaleTimeString()}
                       </p>
                     </div>
@@ -349,28 +373,34 @@ const Dashboard = () => {
               })}
             </div>
           ) : (
-            <p className="text-gray-500 dark:text-gray-400 text-center py-4">No recent activities</p>
+            <p className="text-gray-500 dark:text-gray-400 text-center py-4 text-sm sm:text-base">
+              No recent activities
+            </p>
           )}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Monthly Trends */}
-        <div className="card">
-          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">Monthly Trends</h2>
+        <div className="card p-4 sm:p-6">
+          <h2 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-gray-100 mb-3 sm:mb-4">
+            Monthly Trends
+          </h2>
           {monthlyTrends.length > 0 ? (
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               {monthlyTrends.map((trend, index) => (
                 <div key={index}>
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{trend.month}</span>
-                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1 sm:gap-2 mb-2">
+                    <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">
+                      {trend.month}
+                    </span>
+                    <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                       RS {trend.fees.toLocaleString()} | {trend.students} students
                     </span>
                   </div>
-                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 sm:h-2.5">
                     <div
-                      className="bg-primary-600 dark:bg-primary-500 h-2 rounded-full"
+                      className="bg-primary-600 dark:bg-primary-500 h-2 sm:h-2.5 rounded-full transition-all duration-300"
                       style={{ width: `${Math.min((trend.fees / Math.max(...monthlyTrends.map(t => t.fees))) * 100, 100)}%` }}
                     ></div>
                   </div>
@@ -378,36 +408,46 @@ const Dashboard = () => {
               ))}
             </div>
           ) : (
-            <p className="text-gray-500 dark:text-gray-400 text-center py-4">No trend data available</p>
+            <p className="text-gray-500 dark:text-gray-400 text-center py-4 text-sm sm:text-base">
+              No trend data available
+            </p>
           )}
         </div>
 
         {/* Upcoming Deadlines */}
-        <div className="card">
-          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">Upcoming Deadlines</h2>
+        <div className="card p-4 sm:p-6">
+          <h2 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-gray-100 mb-3 sm:mb-4">
+            Upcoming Deadlines
+          </h2>
           {upcomingDeadlines.length > 0 ? (
-            <div className="space-y-3">
+            <div className="space-y-2 sm:space-y-3">
               {upcomingDeadlines.map((deadline, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border-l-4 border-yellow-500 dark:border-yellow-400">
-                  <div>
-                    <p className="font-medium text-gray-800 dark:text-gray-100">{deadline.title}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1 mt-1">
-                      <Calendar size={14} />
+                <div key={index} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-3 p-2.5 sm:p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border-l-4 border-yellow-500 dark:border-yellow-400">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-xs sm:text-sm text-gray-800 dark:text-gray-100 break-words">
+                      {deadline.title}
+                    </p>
+                    <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1 mt-1">
+                      <Calendar size={12} className="sm:w-3.5 sm:h-3.5" />
                       {deadline.date.toLocaleDateString()}
                     </p>
                   </div>
-                  <p className="font-bold text-yellow-600 dark:text-yellow-400">RS {deadline.amount.toLocaleString()}</p>
+                  <p className="font-bold text-xs sm:text-sm text-yellow-600 dark:text-yellow-400 flex-shrink-0">
+                    RS {deadline.amount.toLocaleString()}
+                  </p>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-gray-500 dark:text-gray-400 text-center py-4">No upcoming deadlines</p>
+            <p className="text-gray-500 dark:text-gray-400 text-center py-4 text-sm sm:text-base">
+              No upcoming deadlines
+            </p>
           )}
           <button
             onClick={() => navigate('/fees')}
-            className="mt-4 text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 text-sm font-medium flex items-center gap-1"
+            className="mt-3 sm:mt-4 text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 text-xs sm:text-sm font-medium flex items-center gap-1 touch-manipulation min-h-[44px] sm:min-h-[36px]"
           >
-            View All Fees <ArrowRight size={16} />
+            View All Fees <ArrowRight size={14} className="sm:w-4 sm:h-4" />
           </button>
         </div>
       </div>

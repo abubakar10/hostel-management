@@ -2,6 +2,7 @@ import express from 'express';
 import { pool } from '../config/database.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { setHostelContext } from '../middleware/hostel.js';
+import { checkEmailExists, isValidEmailFormat } from '../utils/emailValidation.js';
 
 const router = express.Router();
 
@@ -67,13 +68,46 @@ router.post('/', authenticateToken, setHostelContext, async (req, res) => {
       return res.status(400).json({ error: 'Hostel ID is required' });
     }
 
+    // Validate required fields
+    if (!student_id || !first_name || !last_name || !email) {
+      return res.status(400).json({ error: 'Student ID, First Name, Last Name, and Email are required fields' });
+    }
+
+    // Validate email format
+    if (!isValidEmailFormat(email)) {
+      return res.status(400).json({ error: 'Please enter a valid email address' });
+    }
+
+    // Check if email already exists in any table
+    const emailCheck = await checkEmailExists(email);
+    if (emailCheck.exists) {
+      return res.status(400).json({ error: emailCheck.message });
+    }
+
+    // Convert empty date strings to null
+    const normalizedDateOfBirth = (date_of_birth && date_of_birth.trim() !== '') ? date_of_birth : null;
+    
+    // Validate date format if provided
+    if (normalizedDateOfBirth) {
+      const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+      if (!dateRegex.test(normalizedDateOfBirth)) {
+        return res.status(400).json({ error: 'Invalid date format. Please use YYYY-MM-DD format' });
+      }
+      // Check if date is valid
+      const date = new Date(normalizedDateOfBirth);
+      if (isNaN(date.getTime())) {
+        return res.status(400).json({ error: 'Invalid date. Please enter a valid date of birth' });
+      }
+    }
+
     const result = await pool.query(
       `INSERT INTO students (student_id, first_name, last_name, email, phone, address, 
        date_of_birth, gender, course, year_of_study, room_id, status, hostel_id)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
        RETURNING *`,
-      [student_id, first_name, last_name, email, phone, address,
-       date_of_birth, gender, course, year_of_study, room_id, status || 'active', finalHostelId]
+      [student_id, first_name, last_name, email, phone || null, address || null,
+       normalizedDateOfBirth, gender || null, course || null, year_of_study || null, 
+       room_id || null, status || 'active', finalHostelId]
     );
 
     // Update room occupancy if room_id is provided
@@ -89,7 +123,17 @@ router.post('/', authenticateToken, setHostelContext, async (req, res) => {
     if (error.code === '23505') {
       return res.status(400).json({ error: 'Student ID or email already exists' });
     }
-    res.status(500).json({ error: error.message });
+    // Handle date-related errors with user-friendly messages
+    if (error.message && error.message.includes('date')) {
+      return res.status(400).json({ 
+        error: 'Invalid date format. Please enter a valid date of birth or leave it empty.' 
+      });
+    }
+    // Handle other database errors
+    console.error('Error creating student:', error);
+    res.status(500).json({ 
+      error: error.message || 'An error occurred while creating the student. Please try again.' 
+    });
   }
 });
 
@@ -101,6 +145,38 @@ router.put('/:id', authenticateToken, async (req, res) => {
       date_of_birth, gender, course, year_of_study, room_id, status
     } = req.body;
 
+    // Validate required fields
+    if (!first_name || !last_name || !email) {
+      return res.status(400).json({ error: 'First Name, Last Name, and Email are required fields' });
+    }
+
+    // Validate email format
+    if (!isValidEmailFormat(email)) {
+      return res.status(400).json({ error: 'Please enter a valid email address' });
+    }
+
+    // Check if email already exists in any table (excluding current student)
+    const emailCheck = await checkEmailExists(email, null, req.params.id);
+    if (emailCheck.exists) {
+      return res.status(400).json({ error: emailCheck.message });
+    }
+
+    // Convert empty date strings to null
+    const normalizedDateOfBirth = (date_of_birth && date_of_birth.trim() !== '') ? date_of_birth : null;
+    
+    // Validate date format if provided
+    if (normalizedDateOfBirth) {
+      const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+      if (!dateRegex.test(normalizedDateOfBirth)) {
+        return res.status(400).json({ error: 'Invalid date format. Please use YYYY-MM-DD format' });
+      }
+      // Check if date is valid
+      const date = new Date(normalizedDateOfBirth);
+      if (isNaN(date.getTime())) {
+        return res.status(400).json({ error: 'Invalid date. Please enter a valid date of birth' });
+      }
+    }
+
     // Get old room_id
     const oldStudent = await pool.query('SELECT room_id FROM students WHERE id = $1', [req.params.id]);
     const oldRoomId = oldStudent.rows[0]?.room_id;
@@ -110,8 +186,8 @@ router.put('/:id', authenticateToken, async (req, res) => {
        address = $5, date_of_birth = $6, gender = $7, course = $8, year_of_study = $9, 
        room_id = $10, status = $11, updated_at = CURRENT_TIMESTAMP
        WHERE id = $12 RETURNING *`,
-      [first_name, last_name, email, phone, address, date_of_birth, gender,
-       course, year_of_study, room_id, status, req.params.id]
+      [first_name, last_name, email, phone || null, address || null, normalizedDateOfBirth, 
+       gender || null, course || null, year_of_study || null, room_id || null, status, req.params.id]
     );
 
     // Update room status for both old and new rooms
@@ -166,7 +242,20 @@ router.put('/:id', authenticateToken, async (req, res) => {
 
     res.json(result.rows[0]);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    if (error.code === '23505') {
+      return res.status(400).json({ error: 'Student ID or email already exists' });
+    }
+    // Handle date-related errors with user-friendly messages
+    if (error.message && error.message.includes('date')) {
+      return res.status(400).json({ 
+        error: 'Invalid date format. Please enter a valid date of birth or leave it empty.' 
+      });
+    }
+    // Handle other database errors
+    console.error('Error updating student:', error);
+    res.status(500).json({ 
+      error: error.message || 'An error occurred while updating the student. Please try again.' 
+    });
   }
 });
 

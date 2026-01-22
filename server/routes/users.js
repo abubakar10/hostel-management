@@ -3,6 +3,7 @@ import express from 'express';
 import bcrypt from 'bcryptjs';
 import { pool } from '../config/database.js';
 import { authenticateToken } from '../middleware/auth.js';
+import { checkEmailExists, isValidEmailFormat } from '../utils/emailValidation.js';
 
 const router = express.Router();
 
@@ -40,6 +41,17 @@ router.post('/', authenticateToken, async (req, res) => {
     // Validate required fields
     if (!username || !email || !password) {
       return res.status(400).json({ error: 'Username, email, and password are required' });
+    }
+
+    // Validate email format
+    if (!isValidEmailFormat(email)) {
+      return res.status(400).json({ error: 'Please enter a valid email address' });
+    }
+
+    // Check if email already exists in any table
+    const emailCheck = await checkEmailExists(email);
+    if (emailCheck.exists) {
+      return res.status(400).json({ error: emailCheck.message });
     }
 
     // Validate hostel_id for non-super-admin users
@@ -101,6 +113,19 @@ router.put('/:id', authenticateToken, async (req, res) => {
     const currentUser = await pool.query('SELECT * FROM users WHERE id = $1', [userId]);
     if (currentUser.rows.length === 0) {
       return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Validate email format if email is being updated
+    if (email && !isValidEmailFormat(email)) {
+      return res.status(400).json({ error: 'Please enter a valid email address' });
+    }
+
+    // Check if email already exists in any table (excluding current user)
+    if (email && email !== currentUser.rows[0].email) {
+      const emailCheck = await checkEmailExists(email, userId);
+      if (emailCheck.exists) {
+        return res.status(400).json({ error: emailCheck.message });
+      }
     }
 
     // Validate hostel_id for non-super-admin users

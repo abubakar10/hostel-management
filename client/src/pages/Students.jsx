@@ -1,28 +1,19 @@
 import { useState, useEffect } from 'react'
 import api from '../config/api'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Edit, Trash2, Search, X, Download, Upload, Filter } from 'lucide-react'
+import { Plus, Edit, Trash2, Search, X } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useNotification } from '../context/NotificationContext'
-import { exportToCSV, exportToExcel, parseCSV, formatStudentsForExport } from '../utils/exportUtils'
 
 const Students = () => {
   const { user } = useAuth()
-  const { showError, showSuccess, showWarning, showConfirm } = useNotification()
+  const { showError, showSuccess } = useNotification()
   const [students, setStudents] = useState([])
   const [hostels, setHostels] = useState([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [editingStudent, setEditingStudent] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
-  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
-  const [filters, setFilters] = useState({
-    status: 'all',
-    course: '',
-    room: '',
-    gender: 'all'
-  })
-  const [rooms, setRooms] = useState([])
   const [formData, setFormData] = useState({
     student_id: '',
     first_name: '',
@@ -35,26 +26,16 @@ const Students = () => {
     course: '',
     year_of_study: '',
     room_id: null,
-    hostel_id: '',
-    status: 'active'
+    status: 'active',
+    hostel_id: ''
   })
 
   useEffect(() => {
     fetchStudents()
-    fetchRooms()
     if (user?.role === 'super_admin') {
       fetchHostels()
     }
   }, [user])
-
-  const fetchRooms = async () => {
-    try {
-      const response = await api.get('/api/rooms')
-      setRooms(response.data)
-    } catch (error) {
-      console.error('Error fetching rooms:', error)
-    }
-  }
 
   const fetchStudents = async () => {
     try {
@@ -79,64 +60,78 @@ const Students = () => {
   const handleSubmit = async (e) => {
     e.preventDefault()
     try {
-      // Prepare submit data - remove hostel_id from formData first
-      const { hostel_id: formHostelId, ...restFormData } = formData
-      const submitData = { ...restFormData }
-      
-      // Determine hostel_id to use
-      let finalHostelId = null
-      if (user?.role === 'super_admin') {
-        // Super admin must select a hostel from the dropdown
-        finalHostelId = formHostelId || null
-      } else {
-        // Regular admins use their assigned hostel
-        finalHostelId = user?.hostel_id || null
-      }
-      
-      // Validate that we have a hostel_id
-      if (!finalHostelId) {
-        if (user?.role === 'super_admin') {
-          showWarning('Please select a hostel.')
-        } else {
-          showError('Your account does not have a hostel assigned. Please contact an administrator.')
+      // Determine hostel_id: use formData.hostel_id for super_admin, otherwise use user's hostel_id
+      const finalHostelId = user?.role === 'super_admin' 
+        ? (formData.hostel_id ? parseInt(formData.hostel_id) : null)
+        : (user?.hostel_id || null)
+
+      // Normalize date_of_birth - convert empty string to null
+      const normalizedDateOfBirth = formData.date_of_birth && formData.date_of_birth.trim() !== '' 
+        ? formData.date_of_birth 
+        : null
+
+      // Validate date if provided
+      if (normalizedDateOfBirth) {
+        const date = new Date(normalizedDateOfBirth)
+        if (isNaN(date.getTime())) {
+          alert('Please enter a valid date of birth or leave it empty.')
+          return
         }
-        return
       }
-      
-      submitData.hostel_id = finalHostelId
+
+      const submitData = {
+        ...formData,
+        date_of_birth: normalizedDateOfBirth,
+        hostel_id: finalHostelId,
+        // Normalize other optional fields
+        phone: formData.phone?.trim() || null,
+        address: formData.address?.trim() || null,
+        course: formData.course?.trim() || null,
+        gender: formData.gender || null,
+        year_of_study: formData.year_of_study || null,
+      }
 
       if (editingStudent) {
         await api.put(`/api/students/${editingStudent.id}`, submitData)
+        showSuccess('Student updated successfully!')
       } else {
         await api.post('/api/students', submitData)
+        showSuccess('Student created successfully!')
       }
       fetchStudents()
       setShowModal(false)
       resetForm()
     } catch (error) {
-      // Don't show alert for auth errors (401/403) - interceptor will redirect
-      if (error.response?.status === 401 || error.response?.status === 403) {
-        return; // Let the interceptor handle the redirect
+      // Extract user-friendly error message
+      let errorMessage = 'An error occurred while saving the student. Please try again.'
+      
+      if (error.response?.data?.error) {
+        errorMessage = error.response.data.error
+      } else if (error.message) {
+        // Convert technical errors to user-friendly messages
+        if (error.message.includes('date') || error.message.includes('invalid input syntax')) {
+          errorMessage = 'Invalid date format. Please enter a valid date of birth or leave it empty.'
+        } else if (error.message.includes('network') || error.message.includes('fetch')) {
+          errorMessage = 'Network error. Please check your connection and try again.'
+        } else {
+          errorMessage = error.message
+        }
       }
-      const errorMessage = error.response?.data?.error || error.message || 'Error saving student'
+      
       console.error('Error saving student:', error)
       showError(errorMessage)
     }
   }
 
   const handleDelete = async (id) => {
-    showConfirm(
-      'Are you sure you want to delete this student?',
-      async () => {
-        try {
-          await api.delete(`/api/students/${id}`)
-          fetchStudents()
-          showSuccess('Student deleted successfully')
-        } catch (error) {
-          showError(error.response?.data?.error || 'Error deleting student')
-        }
+    if (window.confirm('Are you sure you want to delete this student?')) {
+      try {
+        await api.delete(`/api/students/${id}`)
+        fetchStudents()
+      } catch (error) {
+        alert(error.response?.data?.error || 'Error deleting student')
       }
-    )
+    }
   }
 
   const handleEdit = (student) => {
@@ -153,8 +148,8 @@ const Students = () => {
       course: student.course || '',
       year_of_study: student.year_of_study || '',
       room_id: student.room_id || null,
-      hostel_id: student.hostel_id || '',
-      status: student.status || 'active'
+      status: student.status || 'active',
+      hostel_id: student.hostel_id || ''
     })
     setShowModal(true)
   }
@@ -172,304 +167,215 @@ const Students = () => {
       course: '',
       year_of_study: '',
       room_id: null,
-      hostel_id: '',
-      status: 'active'
+      status: 'active',
+      hostel_id: ''
     })
     setEditingStudent(null)
   }
 
-  const handleExport = (format = 'csv') => {
-    const dataToExport = filteredStudents
-    const formatted = formatStudentsForExport(dataToExport)
-    if (format === 'csv') {
-      exportToCSV(formatted, 'students')
-    } else {
-      exportToExcel(formatted, 'students')
-    }
-  }
-
-  const handleImport = async (e) => {
-    const file = e.target.files[0]
-    if (!file) return
-
-    try {
-      const csvData = await parseCSV(file)
-      // Process and import students
-      let successCount = 0
-      let errorCount = 0
-      
-      for (const row of csvData) {
-        try {
-          const studentData = {
-            student_id: row['Student ID'] || row['student_id'],
-            first_name: row['First Name'] || row['first_name'],
-            last_name: row['Last Name'] || row['last_name'],
-            email: row['Email'] || row['email'],
-            phone: row['Phone'] || row['phone'] || '',
-            address: row['Address'] || row['address'] || '',
-            date_of_birth: row['Date of Birth'] || row['date_of_birth'] || '',
-            gender: row['Gender'] || row['gender'] || '',
-            course: row['Course'] || row['course'] || '',
-            year_of_study: row['Year of Study'] || row['year_of_study'] || '',
-            status: row['Status'] || row['status'] || 'active',
-            hostel_id: user?.hostel_id || null
-          }
-
-          await api.post('/api/students', studentData)
-          successCount++
-        } catch (error) {
-          console.error('Error importing student:', error)
-          errorCount++
-        }
-      }
-
-      if (errorCount > 0) {
-        showWarning(`Import completed: ${successCount} successful, ${errorCount} failed`)
-      } else {
-        showSuccess(`Import completed: ${successCount} students imported successfully`)
-      }
-      fetchStudents()
-      e.target.value = '' // Reset file input
-    } catch (error) {
-      showError('Error parsing CSV file: ' + error.message)
-    }
-  }
-
-  const filteredStudents = students.filter(student => {
-    // Text search
-    const matchesSearch = !searchTerm || 
-      `${student.first_name} ${student.last_name} ${student.student_id} ${student.email} ${student.phone}`
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase())
-
-    // Status filter
-    const matchesStatus = filters.status === 'all' || student.status === filters.status
-
-    // Course filter
-    const matchesCourse = !filters.course || 
-      (student.course && student.course.toLowerCase().includes(filters.course.toLowerCase()))
-
-    // Room filter
-    const matchesRoom = !filters.room || 
-      (student.room_number && student.room_number.toLowerCase().includes(filters.room.toLowerCase()))
-
-    // Gender filter
-    const matchesGender = filters.gender === 'all' || student.gender === filters.gender
-
-    return matchesSearch && matchesStatus && matchesCourse && matchesRoom && matchesGender
-  })
-
-  const uniqueCourses = [...new Set(students.map(s => s.course).filter(Boolean))]
-  const uniqueRooms = [...new Set(students.map(s => s.room_number).filter(Boolean))]
+  const filteredStudents = students.filter(student =>
+    `${student.first_name} ${student.last_name} ${student.student_id} ${student.email}`
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase())
+  )
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">Student Management</h1>
-          <p className="text-gray-600 dark:text-gray-400">Manage all student records</p>
+    <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
+      {/* Header Section - Mobile Optimized */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
+        <div className="w-full sm:w-auto">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-gray-100 mb-1 sm:mb-2">
+            Student Management
+          </h1>
+          <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
+            Manage all student records
+          </p>
         </div>
         <button
           onClick={() => {
             resetForm()
             setShowModal(true)
           }}
-          className="btn-primary flex items-center gap-2"
+          className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto min-h-[48px] sm:min-h-[44px] text-sm sm:text-base shadow-lg active:scale-95 transition-transform"
         >
-          <Plus size={20} />
-          Add Student
+          <Plus size={20} className="sm:w-5 sm:h-5" />
+          <span className="sm:inline">Add Student</span>
         </button>
       </div>
 
-      <div className="card">
-        <div className="mb-4 space-y-4">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-              <input
-                type="text"
-                placeholder="Search by name, ID, email, or phone..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="input-field pl-10"
-              />
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                className={`btn-secondary flex items-center gap-2 ${showAdvancedFilters ? 'bg-primary-100' : ''}`}
-              >
-                <Filter size={18} />
-                Filters
-              </button>
-              <button
-                onClick={() => handleExport('csv')}
-                className="btn-secondary flex items-center gap-2"
-              >
-                <Download size={18} />
-                Export CSV
-              </button>
-              <label className="btn-secondary flex items-center gap-2 cursor-pointer">
-                <Upload size={18} />
-                Import CSV
-                <input
-                  type="file"
-                  accept=".csv"
-                  onChange={handleImport}
-                  className="hidden"
-                />
-              </label>
-            </div>
+      {/* Search and Content Card */}
+      <div className="card p-4 sm:p-6">
+        {/* Search Bar - Mobile Optimized */}
+        <div className="mb-4 sm:mb-6">
+          <div className="relative">
+            <Search className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500" size={20} />
+            <input
+              type="text"
+              placeholder="Search students..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="input-field pl-10 sm:pl-12 text-base sm:text-sm min-h-[48px] sm:min-h-[44px]"
+            />
           </div>
-
-          {showAdvancedFilters && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-gray-50 rounded-lg"
-            >
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                <select
-                  value={filters.status}
-                  onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-                  className="input-field"
-                >
-                  <option value="all">All Status</option>
-                  <option value="active">Active</option>
-                  <option value="inactive">Inactive</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Course</label>
-                <input
-                  type="text"
-                  placeholder="Filter by course..."
-                  value={filters.course}
-                  onChange={(e) => setFilters({ ...filters, course: e.target.value })}
-                  className="input-field"
-                  list="courses"
-                />
-                <datalist id="courses">
-                  {uniqueCourses.map(course => (
-                    <option key={course} value={course} />
-                  ))}
-                </datalist>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Room</label>
-                <input
-                  type="text"
-                  placeholder="Filter by room..."
-                  value={filters.room}
-                  onChange={(e) => setFilters({ ...filters, room: e.target.value })}
-                  className="input-field"
-                  list="rooms"
-                />
-                <datalist id="rooms">
-                  {uniqueRooms.map(room => (
-                    <option key={room} value={room} />
-                  ))}
-                </datalist>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Gender</label>
-                <select
-                  value={filters.gender}
-                  onChange={(e) => setFilters({ ...filters, gender: e.target.value })}
-                  className="input-field"
-                >
-                  <option value="all">All</option>
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                  <option value="other">Other</option>
-                </select>
-              </div>
-            </motion.div>
-          )}
         </div>
 
-        {!loading && (
-          <div className="mb-4 text-sm text-gray-600">
-            Showing {filteredStudents.length} of {students.length} students
-            {(filters.status !== 'all' || filters.course || filters.room || filters.gender || searchTerm) && (
-              <button
-                onClick={() => {
-                  setSearchTerm('')
-                  setFilters({ status: 'all', course: '', room: '', gender: 'all' })
-                }}
-                className="ml-2 text-primary-600 hover:text-primary-700 underline"
-              >
-                Clear filters
-              </button>
-            )}
-          </div>
-        )}
-
         {loading ? (
-          <div className="flex justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+          <div className="flex justify-center py-12 sm:py-16">
+            <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-primary-600 dark:border-primary-400"></div>
+          </div>
+        ) : filteredStudents.length === 0 ? (
+          <div className="text-center py-12 sm:py-16">
+            <p className="text-gray-500 dark:text-gray-400 text-base sm:text-lg">
+              No students found
+            </p>
           </div>
         ) : (
-          <div className="table-container">
-            <table className="table">
-              <thead className="table-header">
-                <tr>
-                  <th className="table-header-cell">ID</th>
-                  <th className="table-header-cell">Name</th>
-                  <th className="table-header-cell">Email</th>
-                  <th className="table-header-cell">Course</th>
-                  <th className="table-header-cell">Room</th>
-                  <th className="table-header-cell">Status</th>
-                  <th className="table-header-cell">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="table-body">
-                <AnimatePresence>
-                  {filteredStudents.map((student, index) => (
-                    <motion.tr
-                      key={student.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: 20 }}
-                      transition={{ delay: index * 0.05 }}
-                      className="hover:bg-gray-50 dark:hover:bg-gray-700"
-                    >
-                      <td className="table-cell font-medium">{student.student_id}</td>
-                      <td className="table-cell">{student.first_name} {student.last_name}</td>
-                      <td className="table-cell">{student.email}</td>
-                      <td className="table-cell">{student.course}</td>
-                      <td className="table-cell">{student.room_number || 'N/A'}</td>
-                      <td className="table-cell">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          student.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                        }`}>
-                          {student.status}
+          <>
+            {/* Desktop Table View */}
+            <div className="hidden lg:block table-container">
+              <table className="table">
+                <thead className="table-header">
+                  <tr>
+                    <th className="table-header-cell">ID</th>
+                    <th className="table-header-cell">Name</th>
+                    <th className="table-header-cell">Email</th>
+                    <th className="table-header-cell">Course</th>
+                    <th className="table-header-cell">Room</th>
+                    <th className="table-header-cell">Status</th>
+                    <th className="table-header-cell">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="table-body">
+                  <AnimatePresence>
+                    {filteredStudents.map((student, index) => (
+                      <motion.tr
+                        key={student.id}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 20 }}
+                        transition={{ delay: index * 0.05 }}
+                        className="hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                      >
+                        <td className="table-cell font-medium">{student.student_id}</td>
+                        <td className="table-cell">{student.first_name} {student.last_name}</td>
+                        <td className="table-cell">{student.email}</td>
+                        <td className="table-cell">{student.course || 'N/A'}</td>
+                        <td className="table-cell">{student.room_number || 'N/A'}</td>
+                        <td className="table-cell">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            student.status === 'active' 
+                              ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' 
+                              : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'
+                          }`}>
+                            {student.status}
+                          </span>
+                        </td>
+                        <td className="table-cell">
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleEdit(student)}
+                              className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+                              aria-label="Edit student"
+                            >
+                              <Edit size={18} />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(student.id)}
+                              className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+                              aria-label="Delete student"
+                            >
+                              <Trash2 size={18} />
+                            </button>
+                          </div>
+                        </td>
+                      </motion.tr>
+                    ))}
+                  </AnimatePresence>
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile/Tablet Card View */}
+            <div className="lg:hidden space-y-3 sm:space-y-4">
+              <AnimatePresence>
+                {filteredStudents.map((student, index) => (
+                  <motion.div
+                    key={student.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ delay: index * 0.03 }}
+                    className="bg-white dark:bg-gray-800 rounded-xl shadow-md dark:shadow-gray-900/50 p-4 sm:p-5 border border-gray-200 dark:border-gray-700 hover:shadow-lg dark:hover:shadow-gray-900/70 transition-all duration-200"
+                  >
+                    {/* Card Header */}
+                    <div className="flex items-start justify-between mb-3 sm:mb-4">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-100 truncate">
+                          {student.first_name} {student.last_name}
+                        </h3>
+                        <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                          ID: {student.student_id}
+                        </p>
+                      </div>
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-medium flex-shrink-0 ml-2 ${
+                        student.status === 'active' 
+                          ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' 
+                          : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'
+                      }`}>
+                        {student.status}
+                      </span>
+                    </div>
+
+                    {/* Card Details */}
+                    <div className="space-y-2 sm:space-y-2.5 mb-4 sm:mb-5">
+                      <div className="flex items-start gap-2 sm:gap-3">
+                        <span className="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400 min-w-[80px] sm:min-w-[90px]">
+                          Email:
                         </span>
-                      </td>
-                      <td className="table-cell">
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handleEdit(student)}
-                            className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
-                          >
-                            <Edit size={18} />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(student.id)}
-                            className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
-                          >
-                            <Trash2 size={18} />
-                          </button>
-                        </div>
-                      </td>
-                    </motion.tr>
-                  ))}
-                </AnimatePresence>
-              </tbody>
-            </table>
-          </div>
+                        <span className="text-xs sm:text-sm text-gray-700 dark:text-gray-300 break-all flex-1">
+                          {student.email}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 sm:gap-3">
+                        <span className="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400 min-w-[80px] sm:min-w-[90px]">
+                          Course:
+                        </span>
+                        <span className="text-xs sm:text-sm text-gray-700 dark:text-gray-300">
+                          {student.course || 'N/A'}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 sm:gap-3">
+                        <span className="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400 min-w-[80px] sm:min-w-[90px]">
+                          Room:
+                        </span>
+                        <span className="text-xs sm:text-sm text-gray-700 dark:text-gray-300 font-medium">
+                          {student.room_number || 'N/A'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex gap-2 sm:gap-3 pt-3 sm:pt-4 border-t border-gray-200 dark:border-gray-700">
+                      <button
+                        onClick={() => handleEdit(student)}
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 sm:py-3 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg font-medium text-sm sm:text-base hover:bg-blue-100 dark:hover:bg-blue-900/30 active:scale-95 transition-all min-h-[44px] sm:min-h-[48px]"
+                      >
+                        <Edit size={18} className="sm:w-5 sm:h-5" />
+                        <span>Edit</span>
+                      </button>
+                      <button
+                        onClick={() => handleDelete(student.id)}
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 sm:py-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg font-medium text-sm sm:text-base hover:bg-red-100 dark:hover:bg-red-900/30 active:scale-95 transition-all min-h-[44px] sm:min-h-[48px]"
+                      >
+                        <Trash2 size={18} className="sm:w-5 sm:h-5" />
+                        <span>Delete</span>
+                      </button>
+                    </div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
+          </>
         )}
       </div>
 
@@ -479,20 +385,21 @@ const Students = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+            className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center p-3 sm:p-4 z-50"
             onClick={() => {
               setShowModal(false)
               resetForm()
             }}
           >
             <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-4 sm:p-6 w-full max-w-full sm:max-w-md md:max-w-2xl max-h-[90vh] overflow-y-auto modal-content"
+              className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-2xl p-4 sm:p-6 w-full max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto"
             >
-              <div className="flex justify-between items-center mb-4 sm:mb-6">
+              {/* Modal Header */}
+              <div className="flex justify-between items-center mb-4 sm:mb-6 sticky top-0 bg-white dark:bg-gray-800 pb-2 sm:pb-0 z-10">
                 <h2 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-gray-100">
                   {editingStudent ? 'Edit Student' : 'Add New Student'}
                 </h2>
@@ -501,113 +408,95 @@ const Students = () => {
                     setShowModal(false)
                     resetForm()
                   }}
-                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center active:scale-95"
+                  aria-label="Close modal"
                 >
-                  <X size={24} />
+                  <X size={24} className="text-gray-600 dark:text-gray-400" />
                 </button>
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-4">
-                {user?.role === 'super_admin' && (
+              {/* Modal Form */}
+              <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Hostel *</label>
-                    <select
-                      value={formData.hostel_id}
-                      onChange={(e) => setFormData({ ...formData, hostel_id: e.target.value })}
-                      className="input-field"
-                      required
-                    >
-                      <option value="">Select Hostel</option>
-                      {hostels.filter(h => h.status === 'active').map(hostel => (
-                        <option key={hostel.id} value={hostel.id}>
-                          {hostel.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Student ID *</label>
+                    <label className="block text-sm sm:text-base font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">
+                      Student ID <span className="text-red-500">*</span>
+                    </label>
                     <input
-                      type="number"
+                      type="text"
                       value={formData.student_id}
-                      onChange={(e) => {
-                        const value = e.target.value
-                        // Only allow positive integers
-                        if (value === '' || /^\d+$/.test(value)) {
-                          setFormData({ ...formData, student_id: value })
-                        }
-                      }}
-                      className="input-field"
+                      onChange={(e) => setFormData({ ...formData, student_id: e.target.value })}
+                      className="input-field min-h-[48px] sm:min-h-[44px] text-base sm:text-sm"
                       required
                       disabled={!!editingStudent}
-                      min="1"
-                      placeholder="Enter numeric ID"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
+                    <label className="block text-sm sm:text-base font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">
+                      First Name <span className="text-red-500">*</span>
+                    </label>
                     <input
                       type="text"
                       value={formData.first_name}
                       onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
-                      className="input-field"
+                      className="input-field min-h-[48px] sm:min-h-[44px] text-base sm:text-sm"
                       required
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Last Name *</label>
+                    <label className="block text-sm sm:text-base font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">
+                      Last Name <span className="text-red-500">*</span>
+                    </label>
                     <input
                       type="text"
                       value={formData.last_name}
                       onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
-                      className="input-field"
+                      className="input-field min-h-[48px] sm:min-h-[44px] text-base sm:text-sm"
                       required
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                    <label className="block text-sm sm:text-base font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">
+                      Email <span className="text-red-500">*</span>
+                    </label>
                     <input
                       type="email"
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className="input-field"
+                      className="input-field min-h-[48px] sm:min-h-[44px] text-base sm:text-sm"
                       required
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone</label>
+                    <label className="block text-sm sm:text-base font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">
+                      Phone
+                    </label>
                     <input
                       type="tel"
                       value={formData.phone}
-                      onChange={(e) => {
-                        const value = e.target.value
-                        // Only allow numbers, spaces, +, -, and parentheses
-                        if (value === '' || /^[\d\s\+\-\(\)]+$/.test(value)) {
-                          setFormData({ ...formData, phone: value })
-                        }
-                      }}
-                      className="input-field"
-                      pattern="[\d\s\+\-\(\)]+"
-                      placeholder="e.g., +92 300 1234567"
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      className="input-field min-h-[48px] sm:min-h-[44px] text-base sm:text-sm"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Date of Birth</label>
+                    <label className="block text-sm sm:text-base font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">
+                      Date of Birth
+                    </label>
                     <input
                       type="date"
                       value={formData.date_of_birth}
                       onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })}
-                      className="input-field"
+                      className="input-field min-h-[48px] sm:min-h-[44px] text-base sm:text-sm"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Gender</label>
+                    <label className="block text-sm sm:text-base font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">
+                      Gender
+                    </label>
                     <select
                       value={formData.gender}
                       onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
-                      className="input-field"
+                      className="input-field min-h-[48px] sm:min-h-[44px] text-base sm:text-sm"
                     >
                       <option value="">Select</option>
                       <option value="male">Male</option>
@@ -616,48 +505,84 @@ const Students = () => {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Course</label>
+                    <label className="block text-sm sm:text-base font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">
+                      Course
+                    </label>
                     <input
                       type="text"
                       value={formData.course}
                       onChange={(e) => setFormData({ ...formData, course: e.target.value })}
-                      className="input-field"
+                      className="input-field min-h-[48px] sm:min-h-[44px] text-base sm:text-sm"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Year of Study</label>
+                    <label className="block text-sm sm:text-base font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">
+                      Year of Study
+                    </label>
                     <input
                       type="number"
                       value={formData.year_of_study}
                       onChange={(e) => setFormData({ ...formData, year_of_study: e.target.value })}
-                      className="input-field"
+                      className="input-field min-h-[48px] sm:min-h-[44px] text-base sm:text-sm"
                       min="1"
                       max="5"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                    <label className="block text-sm sm:text-base font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">
+                      Status
+                    </label>
                     <select
                       value={formData.status}
                       onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                      className="input-field"
+                      className="input-field min-h-[48px] sm:min-h-[44px] text-base sm:text-sm"
                     >
                       <option value="active">Active</option>
                       <option value="inactive">Inactive</option>
                     </select>
                   </div>
+                  {user?.role === 'super_admin' && (
+                    <div className="sm:col-span-2">
+                      <label className="block text-sm sm:text-base font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">
+                        Hostel <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        value={formData.hostel_id}
+                        onChange={(e) => setFormData({ ...formData, hostel_id: e.target.value })}
+                        className="input-field min-h-[48px] sm:min-h-[44px] text-base sm:text-sm"
+                        required
+                      >
+                        <option value="">Select Hostel</option>
+                        {hostels.filter(h => h.status === 'active').map(hostel => (
+                          <option key={hostel.id} value={hostel.id}>
+                            {hostel.name}
+                          </option>
+                        ))}
+                      </select>
+                      {!formData.hostel_id && (
+                        <p className="text-red-500 dark:text-red-400 text-xs sm:text-sm mt-1.5">
+                          Please select a hostel
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                <div className="sm:col-span-2">
+                  <label className="block text-sm sm:text-base font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">
+                    Address
+                  </label>
                   <textarea
                     value={formData.address}
                     onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                    className="input-field"
+                    className="input-field text-base sm:text-sm min-h-[100px] sm:min-h-[80px]"
                     rows="3"
                   />
                 </div>
-                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-4">
-                  <button type="submit" className="btn-primary flex-1 min-h-[44px] text-sm sm:text-base">
+                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-4 sm:pt-6 border-t border-gray-200 dark:border-gray-700">
+                  <button 
+                    type="submit" 
+                    className="btn-primary flex-1 min-h-[48px] sm:min-h-[44px] text-base sm:text-base font-semibold shadow-lg active:scale-95 transition-transform"
+                  >
                     {editingStudent ? 'Update' : 'Create'} Student
                   </button>
                   <button
@@ -666,7 +591,7 @@ const Students = () => {
                       setShowModal(false)
                       resetForm()
                     }}
-                    className="btn-secondary flex-1 min-h-[44px] text-sm sm:text-base"
+                    className="btn-secondary flex-1 min-h-[48px] sm:min-h-[44px] text-base sm:text-base font-semibold active:scale-95 transition-transform"
                   >
                     Cancel
                   </button>

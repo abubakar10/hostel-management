@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { motion } from 'framer-motion'
 import { GraduationCap } from 'lucide-react'
@@ -95,19 +95,28 @@ const StudentLogin = () => {
             whileTap={{ scale: 0.98 }}
             type="submit"
             disabled={loading}
-            className="w-full btn-primary py-3 text-lg"
+            className="w-full btn-primary py-3 text-lg min-h-[48px] sm:min-h-[44px]"
           >
             {loading ? 'Signing in...' : 'Sign In'}
           </motion.button>
+
+          <div className="text-center">
+            <Link
+              to="/forgot-password"
+              className="text-sm text-primary-600 dark:text-primary-400 hover:underline"
+            >
+              Forgot Password?
+            </Link>
+          </div>
         </form>
 
         <div className="mt-6 text-center">
-          <a
-            href="/login"
+          <Link
+            to="/login"
             className="text-sm text-primary-600 dark:text-primary-400 hover:underline"
           >
             Admin Login
-          </a>
+          </Link>
         </div>
       </motion.div>
     </div>
