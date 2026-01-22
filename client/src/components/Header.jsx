@@ -16,7 +16,7 @@ const Header = ({ onMenuClick }) => {
         <div className="flex items-center gap-2 sm:gap-4">
             <button
               onClick={onMenuClick}
-              className="md:hidden p-2 text-gray-600 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors touch-manipulation rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 active:scale-95 min-w-[44px] min-h-[44px] flex items-center justify-center"
+              className="lg:hidden p-2 text-gray-600 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors touch-manipulation rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 active:scale-95 min-w-[44px] min-h-[44px] flex items-center justify-center"
               aria-label="Toggle menu"
             >
               <Menu size={24} />

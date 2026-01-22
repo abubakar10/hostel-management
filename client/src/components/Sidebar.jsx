@@ -55,14 +55,16 @@ const Sidebar = ({ isOpen, onClose }) => {
 
   return (
     <>
+      {/* Mobile & Tablet sidebar - fixed and toggleable (up to lg breakpoint) */}
       <aside className={`
-        fixed md:sticky top-16 left-0 h-[calc(100vh-4rem)] md:h-[calc(100vh-4rem)]
+        fixed lg:hidden top-16 left-0 h-[calc(100vh-4rem)]
         w-64 bg-white dark:bg-gray-800 shadow-lg z-50
         transform transition-transform duration-300 ease-in-out
-        ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+        ${isOpen ? 'translate-x-0' : '-translate-x-full'}
         overflow-y-auto
+        flex-shrink-0
       `}>
-        <div className="flex items-center justify-between p-4 border-b dark:border-gray-700 md:hidden">
+        <div className="flex items-center justify-between p-4 border-b dark:border-gray-700">
           <h2 className="font-semibold text-gray-800 dark:text-gray-200">Menu</h2>
           <button
             onClick={onClose}
@@ -85,8 +87,8 @@ const Sidebar = ({ isOpen, onClose }) => {
                 <NavLink
                   to={item.path}
                   onClick={() => {
-                    // Close sidebar on mobile when item is clicked
-                    if (window.innerWidth < 768) {
+                    // Close sidebar on mobile/tablet when item is clicked
+                    if (window.innerWidth < 1024) {
                       onClose()
                     }
                   }}
@@ -100,6 +102,37 @@ const Sidebar = ({ isOpen, onClose }) => {
                 >
                   <Icon size={18} className="sm:w-5 sm:h-5 flex-shrink-0" />
                   <span className="font-medium text-sm sm:text-base">{item.label}</span>
+                </NavLink>
+              </motion.div>
+            )
+          })}
+        </nav>
+      </aside>
+
+      {/* Desktop sidebar - always visible (lg and above) */}
+      <aside className="hidden lg:block fixed top-16 left-0 h-[calc(100vh-4rem)] w-64 min-w-[16rem] max-w-[16rem] bg-white dark:bg-gray-800 shadow-lg overflow-y-auto flex-shrink-0 z-30">
+        <nav className="p-2 sm:p-4 space-y-1 sm:space-y-2">
+          {allMenuItems.map((item, index) => {
+            const Icon = item.icon
+            return (
+              <motion.div
+                key={item.path}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: index * 0.05 }}
+              >
+                <NavLink
+                  to={item.path}
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 touch-manipulation min-h-[44px] whitespace-nowrap ${
+                      isActive
+                        ? 'bg-primary-600 dark:bg-primary-500 text-white shadow-md'
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                    }`
+                  }
+                >
+                  <Icon size={20} className="flex-shrink-0" />
+                  <span className="font-medium text-sm flex-shrink-0">{item.label}</span>
                 </NavLink>
               </motion.div>
             )

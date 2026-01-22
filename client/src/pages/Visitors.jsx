@@ -140,7 +140,7 @@ const Visitors = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full max-w-full overflow-x-hidden">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">Visitor Management</h1>
@@ -181,8 +181,8 @@ const Visitors = () => {
           </select>
         </div>
 
-        <div className="table-container">
-          <table className="table">
+        <div className="table-container w-full overflow-x-auto">
+          <table className="table w-full min-w-[800px]">
             <thead className="table-header">
               <tr>
                 <th className="table-header-cell">Visitor Name</th>
