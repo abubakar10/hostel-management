@@ -16,7 +16,6 @@ const Mess = () => {
   const [loading, setLoading] = useState(true)
   const [showMenuModal, setShowMenuModal] = useState(false)
   const [showAttendanceModal, setShowAttendanceModal] = useState(false)
-  const [showFeeModal, setShowFeeModal] = useState(false)
   const [editingItem, setEditingItem] = useState(null)
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
   const [menuFormData, setMenuFormData] = useState({
@@ -28,12 +27,6 @@ const Mess = () => {
     date: new Date().toISOString().split('T')[0],
     meal_type: 'breakfast',
     records: []
-  })
-  const [feeFormData, setFeeFormData] = useState({
-    student_id: '',
-    month: new Date().getMonth() + 1,
-    year: new Date().getFullYear(),
-    amount: ''
   })
 
   useEffect(() => {
@@ -110,23 +103,6 @@ const Mess = () => {
     }
   }
 
-  const handleFeeSubmit = async (e) => {
-    e.preventDefault()
-    try {
-      if (editingItem) {
-        await api.put(`/api/mess/fees/${editingItem.id}`, feeFormData)
-        showSuccess('Mess fee updated successfully')
-      } else {
-        await api.post('/api/mess/fees', feeFormData)
-        showSuccess('Mess fee created successfully')
-      }
-      fetchData()
-      setShowFeeModal(false)
-      resetFeeForm()
-    } catch (error) {
-      showError(error.response?.data?.error || 'Error saving mess fee')
-    }
-  }
 
   const handleMarkFeePaid = async (id) => {
     try {
@@ -158,15 +134,6 @@ const Mess = () => {
     })
   }
 
-  const resetFeeForm = () => {
-    setFeeFormData({
-      student_id: '',
-      month: new Date().getMonth() + 1,
-      year: new Date().getFullYear(),
-      amount: ''
-    })
-    setEditingItem(null)
-  }
 
   const toggleStudentAttendance = (studentId, status = 'present') => {
     setAttendanceFormData(prev => {
@@ -227,18 +194,6 @@ const Mess = () => {
               Mark Attendance
             </button>
           )}
-          {activeTab === 'fees' && (
-            <button
-              onClick={() => {
-                resetFeeForm()
-                setShowFeeModal(true)
-              }}
-              className="btn-primary flex items-center gap-2"
-            >
-              <Plus size={20} />
-              Add Fee
-            </button>
-          )}
         </div>
       </div>
 
@@ -293,14 +248,25 @@ const Mess = () => {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {['breakfast', 'lunch', 'dinner'].map(mealType => {
-              const menu = menus.find(m => m.meal_type === mealType && m.date === selectedDate)
+              // Normalize date format for comparison (YYYY-MM-DD)
+              const normalizedSelectedDate = selectedDate.split('T')[0]
+              const menu = menus.find(m => {
+                const menuDate = m.date ? m.date.split('T')[0] : null
+                return m.meal_type === mealType && menuDate === normalizedSelectedDate
+              })
+              
+              // Ensure menu_items is always an array
+              const menuItems = menu?.menu_items 
+                ? (Array.isArray(menu.menu_items) ? menu.menu_items : [menu.menu_items])
+                : []
+              
               return (
                 <div key={mealType} className="border rounded-lg p-4">
                   <h3 className="font-semibold text-gray-800 dark:text-gray-100 mb-2 capitalize">{mealType}</h3>
-                  {menu ? (
+                  {menu && menuItems.length > 0 ? (
                     <div>
-                      <ul className="list-disc list-inside text-sm text-gray-600 mb-2">
-                        {menu.menu_items?.map((item, idx) => (
+                      <ul className="list-disc list-inside text-sm text-gray-600 dark:text-gray-400 mb-2 space-y-1">
+                        {menuItems.map((item, idx) => (
                           <li key={idx}>{item}</li>
                         ))}
                       </ul>
@@ -308,31 +274,34 @@ const Mess = () => {
                         onClick={() => {
                           setEditingItem(menu)
                           setMenuFormData({
-                            date: menu.date,
+                            date: menu.date.split('T')[0],
                             meal_type: menu.meal_type,
-                            menu_items: menu.menu_items?.join(', ') || ''
+                            menu_items: Array.isArray(menu.menu_items) ? menu.menu_items.join(', ') : (menu.menu_items || '')
                           })
                           setShowMenuModal(true)
                         }}
-                        className="text-primary-600 hover:text-primary-700 text-sm"
+                        className="text-primary-600 hover:text-primary-700 text-sm font-medium"
                       >
                         Edit
                       </button>
                     </div>
                   ) : (
-                    <button
-                      onClick={() => {
-                        setMenuFormData({
-                          date: selectedDate,
-                          meal_type: mealType,
-                          menu_items: ''
-                        })
-                        setShowMenuModal(true)
-                      }}
-                      className="text-gray-500 hover:text-primary-600 text-sm"
-                    >
-                      Add {mealType} menu
-                    </button>
+                    <div>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">No menu added yet</p>
+                      <button
+                        onClick={() => {
+                          setMenuFormData({
+                            date: selectedDate,
+                            meal_type: mealType,
+                            menu_items: ''
+                          })
+                          setShowMenuModal(true)
+                        }}
+                        className="text-primary-600 hover:text-primary-700 text-sm font-medium"
+                      >
+                        Add {mealType} menu
+                      </button>
+                    </div>
                   )}
                 </div>
               )
@@ -365,39 +334,58 @@ const Mess = () => {
               </thead>
               <tbody className="table-body">
                 {students.map((student, index) => {
-                  const breakfast = mealAttendance.find(
-                    a => a.student_id === student.id && a.meal_type === 'breakfast' && a.date === selectedDate
-                  )
-                  const lunch = mealAttendance.find(
-                    a => a.student_id === student.id && a.meal_type === 'lunch' && a.date === selectedDate
-                  )
-                  const dinner = mealAttendance.find(
-                    a => a.student_id === student.id && a.meal_type === 'dinner' && a.date === selectedDate
-                  )
+                  // Normalize date format for comparison (YYYY-MM-DD)
+                  const normalizedSelectedDate = selectedDate.split('T')[0]
+                  
+                  const breakfast = mealAttendance.find(a => {
+                    const attendanceDate = a.date ? a.date.split('T')[0] : null
+                    return a.student_id === student.id && a.meal_type === 'breakfast' && attendanceDate === normalizedSelectedDate
+                  })
+                  const lunch = mealAttendance.find(a => {
+                    const attendanceDate = a.date ? a.date.split('T')[0] : null
+                    return a.student_id === student.id && a.meal_type === 'lunch' && attendanceDate === normalizedSelectedDate
+                  })
+                  const dinner = mealAttendance.find(a => {
+                    const attendanceDate = a.date ? a.date.split('T')[0] : null
+                    return a.student_id === student.id && a.meal_type === 'dinner' && attendanceDate === normalizedSelectedDate
+                  })
+                  
                   return (
                     <tr key={student.id}>
                       <td className="table-cell">
                         {student.first_name} {student.last_name}
                       </td>
                       <td className="table-cell">
-                        <span className={`px-2 py-1 rounded text-xs ${
-                          breakfast?.status === 'present' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
+                        <span className={`px-2 py-1 rounded text-xs font-medium ${
+                          breakfast?.status === 'present' 
+                            ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' 
+                            : breakfast?.status === 'absent'
+                            ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'
+                            : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
                         }`}>
-                          {breakfast?.status || 'Not marked'}
+                          {breakfast?.status === 'present' ? 'Present' : breakfast?.status === 'absent' ? 'Absent' : 'Not marked'}
                         </span>
                       </td>
                       <td className="table-cell">
-                        <span className={`px-2 py-1 rounded text-xs ${
-                          lunch?.status === 'present' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
+                        <span className={`px-2 py-1 rounded text-xs font-medium ${
+                          lunch?.status === 'present' 
+                            ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' 
+                            : lunch?.status === 'absent'
+                            ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'
+                            : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
                         }`}>
-                          {lunch?.status || 'Not marked'}
+                          {lunch?.status === 'present' ? 'Present' : lunch?.status === 'absent' ? 'Absent' : 'Not marked'}
                         </span>
                       </td>
                       <td className="table-cell">
-                        <span className={`px-2 py-1 rounded text-xs ${
-                          dinner?.status === 'present' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
+                        <span className={`px-2 py-1 rounded text-xs font-medium ${
+                          dinner?.status === 'present' 
+                            ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' 
+                            : dinner?.status === 'absent'
+                            ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'
+                            : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
                         }`}>
-                          {dinner?.status || 'Not marked'}
+                          {dinner?.status === 'present' ? 'Present' : dinner?.status === 'absent' ? 'Absent' : 'Not marked'}
                         </span>
                       </td>
                     </tr>
@@ -412,6 +400,12 @@ const Mess = () => {
       {/* Fees Tab */}
       {activeTab === 'fees' && (
         <div className="card">
+          <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+            <p className="text-sm text-blue-800 dark:text-blue-300">
+              <strong>Note:</strong> Mess fees can only be created from the <strong>Fees</strong> module. 
+              This page is for viewing fee status and marking fees as paid.
+            </p>
+          </div>
           <div className="table-container">
             <table className="table">
               <thead className="table-header">
@@ -424,36 +418,49 @@ const Mess = () => {
                 </tr>
               </thead>
               <tbody className="table-body">
-                {messFees.map((fee, index) => (
-                  <tr key={fee.id}>
-                    <td className="table-cell">
-                      {fee.first_name} {fee.last_name}
-                    </td>
-                    <td className="table-cell">
-                      {fee.month}/{fee.year}
-                    </td>
-                    <td className="table-cell">RS {parseFloat(fee.amount).toLocaleString()}</td>
-                    <td className="table-cell">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        fee.status === 'paid'
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {fee.status}
-                      </span>
-                    </td>
-                    <td className="table-cell">
-                      {fee.status === 'pending' && (
-                        <button
-                          onClick={() => handleMarkFeePaid(fee.id)}
-                          className="text-green-600 hover:text-green-700 text-sm"
-                        >
-                          Mark Paid
-                        </button>
-                      )}
+                {messFees.length === 0 ? (
+                  <tr>
+                    <td colSpan="5" className="table-cell text-center text-gray-500 dark:text-gray-400 py-8">
+                      No mess fees found. Create fees from the <strong>Fees</strong> module.
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  messFees.map((fee, index) => (
+                    <tr key={fee.id}>
+                      <td className="table-cell">
+                        {fee.first_name} {fee.last_name}
+                      </td>
+                    <td className="table-cell">
+                      {fee.month ? `${fee.month}/${fee.year}` : fee.due_date ? new Date(fee.due_date).toLocaleDateString('en-US', { month: 'numeric', year: 'numeric' }) : 'N/A'}
+                    </td>
+                      <td className="table-cell">RS {parseFloat(fee.amount).toLocaleString()}</td>
+                      <td className="table-cell">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          fee.status === 'paid'
+                            ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
+                            : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300'
+                        }`}>
+                          {fee.status}
+                        </span>
+                      </td>
+                      <td className="table-cell">
+                        {fee.status === 'pending' && (
+                          <button
+                            onClick={() => handleMarkFeePaid(fee.id)}
+                            className="text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 text-sm font-medium"
+                          >
+                            Mark Paid
+                          </button>
+                        )}
+                        {fee.status === 'paid' && fee.paid_date && (
+                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                            Paid on {new Date(fee.paid_date).toLocaleDateString()}
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -654,102 +661,6 @@ const Mess = () => {
         )}
       </AnimatePresence>
 
-      {/* Fee Modal */}
-      <AnimatePresence>
-        {showFeeModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
-            onClick={() => {
-              setShowFeeModal(false)
-              resetFeeForm()
-            }}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-              className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 w-full max-w-md modal-content"
-            >
-              <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-4">Add Mess Fee</h2>
-              <form onSubmit={handleFeeSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Student *</label>
-                  <select
-                    value={feeFormData.student_id}
-                    onChange={(e) => setFeeFormData({ ...feeFormData, student_id: e.target.value })}
-                    className="input-field"
-                    required
-                  >
-                    <option value="">Select Student</option>
-                    {students.map(student => (
-                      <option key={student.id} value={student.id}>
-                        {student.first_name} {student.last_name} ({student.student_id})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Month *</label>
-                    <select
-                      value={feeFormData.month}
-                      onChange={(e) => setFeeFormData({ ...feeFormData, month: parseInt(e.target.value) })}
-                      className="input-field"
-                      required
-                    >
-                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(m => (
-                        <option key={m} value={m}>{m}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Year *</label>
-                    <input
-                      type="number"
-                      value={feeFormData.year}
-                      onChange={(e) => setFeeFormData({ ...feeFormData, year: parseInt(e.target.value) })}
-                      className="input-field"
-                      required
-                      min="2020"
-                      max="2100"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Amount (RS) *</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={feeFormData.amount}
-                    onChange={(e) => setFeeFormData({ ...feeFormData, amount: e.target.value })}
-                    className="input-field"
-                    required
-                  />
-                </div>
-                <div className="flex gap-4 pt-4">
-                  <button type="submit" className="btn-primary flex-1">
-                    {editingItem ? 'Update' : 'Create'} Fee
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowFeeModal(false)
-                      resetFeeForm()
-                    }}
-                    className="btn-secondary flex-1"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   )
 }

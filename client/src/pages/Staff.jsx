@@ -43,11 +43,60 @@ const Staff = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    
+    // Validate required fields
+    if (!formData.staff_id || formData.staff_id.toString().trim() === '') {
+      showError('Please enter a staff ID')
+      return
+    }
+    
+    if (!formData.first_name || formData.first_name.trim() === '') {
+      showError('Please enter first name')
+      return
+    }
+    
+    if (!formData.last_name || formData.last_name.trim() === '') {
+      showError('Please enter last name')
+      return
+    }
+    
+    if (!formData.email || formData.email.trim() === '') {
+      showError('Please enter email address')
+      return
+    }
+    
+    // Validate salary if provided (must be positive number)
+    if (formData.salary && formData.salary.toString().trim() !== '') {
+      const salaryValue = parseFloat(formData.salary)
+      if (isNaN(salaryValue) || salaryValue < 0) {
+        showError('Salary must be a valid positive number')
+        return
+      }
+    }
+    
+    // Validate hire_date if provided (must be valid date)
+    if (formData.hire_date && formData.hire_date.trim() !== '') {
+      const dateValue = new Date(formData.hire_date)
+      if (isNaN(dateValue.getTime())) {
+        showError('Please enter a valid hire date')
+        return
+      }
+    }
+    
     try {
+      // Prepare data - convert empty strings to null for optional fields
+      const dataToSend = {
+        ...formData,
+        salary: formData.salary && formData.salary.toString().trim() !== '' ? parseFloat(formData.salary) : null,
+        hire_date: formData.hire_date && formData.hire_date.trim() !== '' ? formData.hire_date : null,
+        phone: formData.phone && formData.phone.trim() !== '' ? formData.phone : null,
+        shift: formData.shift && formData.shift.trim() !== '' ? formData.shift : null
+      }
+      
       if (editingStaff) {
-        await api.put(`/api/staff/${editingStaff.id}`, formData)
+        await api.put(`/api/staff/${editingStaff.id}`, dataToSend)
       } else {
-        await api.post('/api/staff', formData)
+        await api.post('/api/staff', dataToSend)
       }
       fetchStaff()
       setShowModal(false)
@@ -116,7 +165,12 @@ const Staff = () => {
     total: staff.length,
     wardens: staff.filter(s => s.role === 'warden').length,
     cleaners: staff.filter(s => s.role === 'cleaner').length,
-    security: staff.filter(s => s.role === 'security').length
+    security: staff.filter(s => s.role === 'security').length,
+    chefs: staff.filter(s => s.role === 'chef').length,
+    owners: staff.filter(s => s.role === 'owner').length,
+    laundry: staff.filter(s => s.role === 'laundry_staff').length,
+    finance: staff.filter(s => s.role === 'finance_officer').length,
+    storekeepers: staff.filter(s => s.role === 'storekeeper').length
   }
 
   return (
@@ -187,6 +241,11 @@ const Staff = () => {
             <option value="warden">Wardens</option>
             <option value="cleaner">Cleaners</option>
             <option value="security">Security</option>
+            <option value="chef">Chef</option>
+            <option value="owner">Owner</option>
+            <option value="laundry_staff">Laundry Staff</option>
+            <option value="finance_officer">Finance Officer</option>
+            <option value="storekeeper">Storekeeper</option>
           </select>
         </div>
 
@@ -223,11 +282,17 @@ const Staff = () => {
                     <td className="table-cell">{staffMember.email}</td>
                     <td className="table-cell">
                       <span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${
-                        staffMember.role === 'warden' ? 'bg-blue-100 text-blue-800' :
-                        staffMember.role === 'cleaner' ? 'bg-green-100 text-green-800' :
-                        'bg-orange-100 text-orange-800'
+                        staffMember.role === 'warden' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300' :
+                        staffMember.role === 'cleaner' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' :
+                        staffMember.role === 'security' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300' :
+                        staffMember.role === 'chef' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300' :
+                        staffMember.role === 'owner' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300' :
+                        staffMember.role === 'laundry_staff' ? 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-800 dark:text-cyan-300' :
+                        staffMember.role === 'finance_officer' ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300' :
+                        staffMember.role === 'storekeeper' ? 'bg-pink-100 dark:bg-pink-900/30 text-pink-800 dark:text-pink-300' :
+                        'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
                       }`}>
-                        {staffMember.role}
+                        {staffMember.role?.replace('_', ' ') || 'N/A'}
                       </span>
                     </td>
                     <td className="table-cell">{staffMember.shift || 'N/A'}</td>
@@ -321,6 +386,11 @@ const Staff = () => {
                     <option value="warden">Warden</option>
                     <option value="cleaner">Cleaner</option>
                     <option value="security">Security Staff</option>
+                    <option value="chef">Chef</option>
+                    <option value="owner">Owner</option>
+                    <option value="laundry_staff">Laundry Staff</option>
+                    <option value="finance_officer">Finance Officer</option>
+                    <option value="storekeeper">Storekeeper</option>
                   </select>
                 </div>
                 <div>
@@ -381,24 +451,38 @@ const Staff = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Salary</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Salary</label>
                   <input
                     type="number"
                     value={formData.salary}
-                    onChange={(e) => setFormData({ ...formData, salary: e.target.value })}
+                    onChange={(e) => {
+                      const value = e.target.value
+                      // Allow empty or valid positive numbers
+                      if (value === '' || (!isNaN(parseFloat(value)) && parseFloat(value) >= 0)) {
+                        setFormData({ ...formData, salary: value })
+                      }
+                    }}
                     className="input-field"
                     min="0"
                     step="0.01"
+                    placeholder="0.00"
                   />
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Leave empty if salary is not yet determined
+                  </p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Hire Date</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Hire Date</label>
                   <input
                     type="date"
                     value={formData.hire_date}
                     onChange={(e) => setFormData({ ...formData, hire_date: e.target.value })}
                     className="input-field"
+                    max={new Date().toISOString().split('T')[0]}
                   />
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Leave empty if hire date is not yet determined
+                  </p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>

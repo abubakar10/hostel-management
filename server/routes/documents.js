@@ -34,7 +34,9 @@ const upload = multer({
     if (mimetype && extname) {
       return cb(null, true);
     } else {
-      cb(new Error('Invalid file type. Only images, PDFs, and documents are allowed.'));
+      // Store error in request for better error handling
+      req.fileValidationError = 'Invalid file type. Only PDF, DOC, DOCX, JPG, and PNG files are allowed.';
+      cb(new Error(req.fileValidationError));
     }
   }
 });
@@ -101,18 +103,52 @@ router.get('/:id', authenticateToken, async (req, res) => {
 // Upload document
 router.post('/', authenticateToken, setHostelContext, upload.single('file'), async (req, res) => {
   try {
+    // Handle multer errors
+    if (req.fileValidationError) {
+      return res.status(400).json({ error: req.fileValidationError });
+    }
+
     if (!req.file) {
-      return res.status(400).json({ error: 'No file uploaded' });
+      return res.status(400).json({ error: 'No file uploaded. Please select a file to upload.' });
     }
 
     const {
       student_id, document_type, hostel_id
     } = req.body;
 
-    const finalHostelId = hostel_id || req.hostelId;
+    // Validate required fields
+    if (!student_id || student_id.toString().trim() === '') {
+      // Delete uploaded file if validation fails
+      if (req.file && fs.existsSync(req.file.path)) {
+        fs.unlinkSync(req.file.path);
+      }
+      return res.status(400).json({ error: 'Please select a student' });
+    }
+
+    if (!document_type || document_type.toString().trim() === '') {
+      // Delete uploaded file if validation fails
+      if (req.file && fs.existsSync(req.file.path)) {
+        fs.unlinkSync(req.file.path);
+      }
+      return res.status(400).json({ error: 'Document type is required' });
+    }
+
+    // Validate student exists
+    const studentCheck = await pool.query('SELECT id, hostel_id FROM students WHERE id = $1', [student_id]);
+    if (studentCheck.rows.length === 0) {
+      // Delete uploaded file if student doesn't exist
+      if (req.file && fs.existsSync(req.file.path)) {
+        fs.unlinkSync(req.file.path);
+      }
+      return res.status(400).json({ error: 'Selected student does not exist. Please select a valid student.' });
+    }
+
+    const finalHostelId = hostel_id || req.hostelId || studentCheck.rows[0].hostel_id;
     if (!finalHostelId) {
       // Delete uploaded file if hostel_id is missing
-      fs.unlinkSync(req.file.path);
+      if (req.file && fs.existsSync(req.file.path)) {
+        fs.unlinkSync(req.file.path);
+      }
       return res.status(400).json({ error: 'Hostel ID is required' });
     }
 
@@ -136,9 +172,19 @@ router.post('/', authenticateToken, setHostelContext, upload.single('file'), asy
   } catch (error) {
     // Delete uploaded file on error
     if (req.file && fs.existsSync(req.file.path)) {
-      fs.unlinkSync(req.file.path);
+      try {
+        fs.unlinkSync(req.file.path);
+      } catch (unlinkError) {
+        console.error('Error deleting uploaded file:', unlinkError);
+      }
     }
-    res.status(500).json({ error: error.message });
+    
+    // Provide user-friendly error messages
+    if (error.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({ error: 'File size exceeds the maximum limit of 10MB' });
+    }
+    
+    res.status(500).json({ error: error.message || 'Error uploading document. Please try again.' });
   }
 });
 

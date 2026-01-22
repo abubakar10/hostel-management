@@ -83,11 +83,60 @@ const Maintenance = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    
+    // Validate required fields when editing
+    if (editingItem) {
+      if (!updateData.status || updateData.status.trim() === '') {
+        showError('Please select a status')
+        return
+      }
+      
+      // Validate cost if provided (must be a valid positive number)
+      if (updateData.cost && updateData.cost.toString().trim() !== '') {
+        const costValue = parseFloat(updateData.cost)
+        if (isNaN(costValue) || costValue < 0) {
+          showError('Cost must be a valid positive number (cannot be negative)')
+          return
+        }
+        // Ensure cost is not exactly 0 if user entered something
+        if (costValue === 0 && updateData.cost.toString().trim() !== '0' && updateData.cost.toString().trim() !== '0.00') {
+          showError('Cost must be a positive number greater than zero')
+          return
+        }
+      }
+      
+      // Validate completed_date if provided (must be a valid date)
+      if (updateData.completed_date && updateData.completed_date.trim() !== '') {
+        const dateValue = new Date(updateData.completed_date)
+        if (isNaN(dateValue.getTime())) {
+          showError('Please enter a valid completion date')
+          return
+        }
+      }
+      
+      // Validate assigned_to if status requires it
+      if (updateData.status === 'in_progress' || updateData.status === 'completed') {
+        if (!updateData.assigned_to || updateData.assigned_to.trim() === '') {
+          showError('Please assign this request to a staff member')
+          return
+        }
+      }
+    }
+    
     try {
+      // Prepare data - convert empty strings to null for optional fields
+      let dataToSend
       if (editingItem) {
-        await api.put(`/api/complaints/maintenance/${editingItem.id}`, updateData)
+        dataToSend = {
+          status: updateData.status,
+          assigned_to: updateData.assigned_to && updateData.assigned_to.trim() !== '' ? updateData.assigned_to : null,
+          cost: updateData.cost && updateData.cost.trim() !== '' ? parseFloat(updateData.cost) : null,
+          completed_date: updateData.completed_date && updateData.completed_date.trim() !== '' ? updateData.completed_date : null
+        }
+        await api.put(`/api/complaints/maintenance/${editingItem.id}`, dataToSend)
       } else {
-        await api.post('/api/complaints/maintenance', formData)
+        dataToSend = formData
+        await api.post('/api/complaints/maintenance', dataToSend)
       }
       fetchMaintenance()
       setShowModal(false)
@@ -379,11 +428,17 @@ const Maintenance = () => {
                         </select>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Assign To</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Assign To
+                          {(updateData.status === 'in_progress' || updateData.status === 'completed') && (
+                            <span className="text-red-500 ml-1">*</span>
+                          )}
+                        </label>
                         <select
                           value={updateData.assigned_to}
                           onChange={(e) => setUpdateData({ ...updateData, assigned_to: e.target.value })}
                           className="input-field"
+                          required={updateData.status === 'in_progress' || updateData.status === 'completed'}
                         >
                           <option value="">Select Staff</option>
                           {staff.map(s => (
@@ -392,17 +447,56 @@ const Maintenance = () => {
                             </option>
                           ))}
                         </select>
+                        {(updateData.status === 'in_progress' || updateData.status === 'completed') && (
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            Staff assignment is required for this status
+                          </p>
+                        )}
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Cost (RS)</label>
                         <input
                           type="number"
                           step="0.01"
+                          min="0"
                           value={updateData.cost}
-                          onChange={(e) => setUpdateData({ ...updateData, cost: e.target.value })}
+                          onChange={(e) => {
+                            const value = e.target.value
+                            // Allow empty string
+                            if (value === '') {
+                              setUpdateData({ ...updateData, cost: '' })
+                              return
+                            }
+                            // Remove any negative signs or invalid characters
+                            const cleanValue = value.replace(/[^0-9.]/g, '')
+                            // Parse and validate
+                            const numValue = parseFloat(cleanValue)
+                            // Only update if it's a valid positive number or empty
+                            if (!isNaN(numValue) && numValue >= 0) {
+                              setUpdateData({ ...updateData, cost: cleanValue })
+                            } else if (cleanValue === '' || cleanValue === '.') {
+                              // Allow partial input like "5." or empty
+                              setUpdateData({ ...updateData, cost: cleanValue })
+                            }
+                          }}
+                          onBlur={(e) => {
+                            // Format on blur - ensure it's a valid number
+                            const value = e.target.value
+                            if (value && value.trim() !== '') {
+                              const numValue = parseFloat(value)
+                              if (!isNaN(numValue) && numValue >= 0) {
+                                setUpdateData({ ...updateData, cost: numValue.toFixed(2) })
+                              } else {
+                                setUpdateData({ ...updateData, cost: '' })
+                              }
+                            }
+                          }}
                           className="input-field"
                           placeholder="0.00"
                         />
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          Leave empty if cost is not yet determined. Only positive values allowed.
+                        </p>
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Completed Date</label>
@@ -411,7 +505,11 @@ const Maintenance = () => {
                           value={updateData.completed_date}
                           onChange={(e) => setUpdateData({ ...updateData, completed_date: e.target.value })}
                           className="input-field"
+                          max={new Date().toISOString().split('T')[0]}
                         />
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          Leave empty if not yet completed
+                        </p>
                       </div>
                     </div>
                   </>

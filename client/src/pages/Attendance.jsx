@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import api from '../config/api'
 import { motion } from 'framer-motion'
-import { Calendar, CheckCircle, XCircle, Clock, Download } from 'lucide-react'
+import { Calendar, CheckCircle, XCircle, Clock, Download, AlertCircle } from 'lucide-react'
 import { format } from 'date-fns'
 import { useNotification } from '../context/NotificationContext'
 
@@ -75,19 +75,52 @@ const Attendance = () => {
 
   const handleBulkAttendance = async (records) => {
     try {
-      await api.post('/api/attendance/bulk', {
+      const response = await api.post('/api/attendance/bulk', {
         date: selectedDate,
         records
       })
       fetchDailyAttendance()
-      showSuccess('Attendance recorded successfully!')
+      if (response.data.errors && response.data.errors.length > 0) {
+        showError(`Attendance recorded for ${response.data.records?.length || 0} student(s). Some students were skipped: ${response.data.errors.map(e => e.error).join(', ')}`)
+      } else {
+        showSuccess(`Attendance recorded successfully for ${response.data.records?.length || records.length} student(s)!`)
+      }
     } catch (error) {
       showError(error.response?.data?.error || 'Error recording attendance')
     }
   }
 
   const markAllPresent = () => {
-    const records = students.map(student => ({
+    // Filter out students who were registered after the selected date
+    const selectedDateObj = new Date(selectedDate)
+    const validStudents = students.filter(student => {
+      if (!student.created_at) return true // If no created_at, allow (for backward compatibility)
+      const registrationDate = new Date(student.created_at)
+      return selectedDateObj >= registrationDate
+    })
+
+    if (validStudents.length === 0) {
+      showError('No students can have attendance marked for this date. All students were registered after this date.')
+      return
+    }
+
+    if (validStudents.length < students.length) {
+      const skippedCount = students.length - validStudents.length
+      showConfirm(
+        `${skippedCount} student(s) will be skipped because they were registered after ${selectedDate}. Continue?`,
+        () => {
+          const records = validStudents.map(student => ({
+            student_id: student.id,
+            status: 'present',
+            remarks: ''
+          }))
+          handleBulkAttendance(records)
+        }
+      )
+      return
+    }
+
+    const records = validStudents.map(student => ({
       student_id: student.id,
       status: 'present',
       remarks: ''
@@ -149,7 +182,33 @@ const Attendance = () => {
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
               </div>
             ) : (
-              <div className="table-container">
+              <>
+                {(() => {
+                  const selectedDateObj = new Date(selectedDate)
+                  const studentsAfterDate = students.filter(s => {
+                    if (!s.created_at) return false
+                    return new Date(s.created_at) > selectedDateObj
+                  })
+                  
+                  if (studentsAfterDate.length > 0) {
+                    return (
+                      <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                        <div className="flex items-start gap-2">
+                          <AlertCircle size={20} className="text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
+                          <div className="text-sm text-yellow-800 dark:text-yellow-300">
+                            <p className="font-medium mb-1">Note:</p>
+                            <p>
+                              {studentsAfterDate.length} student(s) cannot have attendance marked for {selectedDate} because they were registered after this date. 
+                              Their attendance buttons are disabled.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  }
+                  return null
+                })()}
+                <div className="table-container">
                 <table className="table">
                   <thead className="table-header">
                     <tr>
@@ -165,16 +224,31 @@ const Attendance = () => {
                       const attendanceRecord = attendance.find(a => a.student_id === student.id)
                       const status = attendanceRecord?.status || 'absent'
                       
+                      // Check if student was registered before or on the selected date
+                      const selectedDateObj = new Date(selectedDate)
+                      const registrationDate = student.created_at ? new Date(student.created_at) : null
+                      const canMarkAttendance = !registrationDate || selectedDateObj >= registrationDate
+                      const registrationDateStr = registrationDate ? registrationDate.toISOString().split('T')[0] : null
+                      
                       return (
                         <motion.tr
                           key={student.id}
                           initial={{ opacity: 0, y: 20 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: index * 0.05 }}
-                          className="hover:bg-gray-50 dark:hover:bg-gray-700"
+                          className={`hover:bg-gray-50 dark:hover:bg-gray-700 ${
+                            !canMarkAttendance ? 'opacity-60' : ''
+                          }`}
                         >
                           <td className="table-cell font-medium">{student.student_id}</td>
-                          <td className="table-cell">{student.first_name} {student.last_name}</td>
+                          <td className="table-cell">
+                            {student.first_name} {student.last_name}
+                            {!canMarkAttendance && registrationDateStr && (
+                              <span className="ml-2 text-xs text-gray-500 dark:text-gray-400" title={`Registered on ${registrationDateStr}`}>
+                                (Registered: {registrationDateStr})
+                              </span>
+                            )}
+                          </td>
                           <td className="table-cell">{student.room_number || 'N/A'}</td>
                           <td className="table-cell">
                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${
@@ -186,35 +260,41 @@ const Attendance = () => {
                             </span>
                           </td>
                           <td className="table-cell">
-                            <div className="flex gap-2">
-                              <button
-                                onClick={() => handleAttendanceChange(student.id, 'present')}
-                                className={`p-2 rounded transition-colors ${
-                                  status === 'present' ? 'bg-green-100 dark:bg-green-900/20 text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700'
-                                }`}
-                                title="Present"
-                              >
-                                <CheckCircle size={18} />
-                              </button>
-                              <button
-                                onClick={() => handleAttendanceChange(student.id, 'late')}
-                                className={`p-2 rounded transition-colors ${
-                                  status === 'late' ? 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400' : 'text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700'
-                                }`}
-                                title="Late"
-                              >
-                                <Clock size={18} />
-                              </button>
-                              <button
-                                onClick={() => handleAttendanceChange(student.id, 'absent')}
-                                className={`p-2 rounded transition-colors ${
-                                  status === 'absent' ? 'bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400' : 'text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700'
-                                }`}
-                                title="Absent"
-                              >
-                                <XCircle size={18} />
-                              </button>
-                            </div>
+                            {!canMarkAttendance ? (
+                              <span className="text-xs text-gray-500 dark:text-gray-400 italic">
+                                Cannot mark (registered after {selectedDate})
+                              </span>
+                            ) : (
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => handleAttendanceChange(student.id, 'present')}
+                                  className={`p-2 rounded transition-colors ${
+                                    status === 'present' ? 'bg-green-100 dark:bg-green-900/20 text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                  }`}
+                                  title="Present"
+                                >
+                                  <CheckCircle size={18} />
+                                </button>
+                                <button
+                                  onClick={() => handleAttendanceChange(student.id, 'late')}
+                                  className={`p-2 rounded transition-colors ${
+                                    status === 'late' ? 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400' : 'text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                  }`}
+                                  title="Late"
+                                >
+                                  <Clock size={18} />
+                                </button>
+                                <button
+                                  onClick={() => handleAttendanceChange(student.id, 'absent')}
+                                  className={`p-2 rounded transition-colors ${
+                                    status === 'absent' ? 'bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400' : 'text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                  }`}
+                                  title="Absent"
+                                >
+                                  <XCircle size={18} />
+                                </button>
+                              </div>
+                            )}
                           </td>
                         </motion.tr>
                       )
@@ -222,6 +302,7 @@ const Attendance = () => {
                   </tbody>
                 </table>
               </div>
+              </>
             )}
           </div>
         </>

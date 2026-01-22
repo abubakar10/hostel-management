@@ -53,6 +53,38 @@ const Visitors = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    
+    // Validate required fields with user-friendly messages
+    if (!formData.student_id || formData.student_id.toString().trim() === '') {
+      showError('Please select a student for this visitor')
+      return
+    }
+    
+    if (!formData.visitor_name || formData.visitor_name.trim() === '') {
+      showError('Please enter the visitor name')
+      return
+    }
+    
+    // Validate visitor name - must contain at least one letter (not just numbers)
+    const visitorNameTrimmed = formData.visitor_name.trim()
+    
+    // Check if name is just numbers
+    if (/^\d+$/.test(visitorNameTrimmed)) {
+      showError('Visitor name cannot be just numbers. Please enter a valid name with letters.')
+      return
+    }
+    
+    // Additional validation: name should have at least 2 characters and contain at least one letter
+    if (visitorNameTrimmed.length < 2) {
+      showError('Visitor name must be at least 2 characters long')
+      return
+    }
+    
+    if (!/[a-zA-Z]/.test(visitorNameTrimmed)) {
+      showError('Visitor name must contain at least one letter')
+      return
+    }
+    
     try {
       if (editingVisitor) {
         await api.put(`/api/visitors/${editingVisitor.id}`, formData)
@@ -65,7 +97,9 @@ const Visitors = () => {
       setShowModal(false)
       resetForm()
     } catch (error) {
-      showError(error.response?.data?.error || 'Error saving visitor')
+      // Show user-friendly error messages
+      const errorMessage = error.response?.data?.error || error.message || 'Error saving visitor'
+      showError(errorMessage)
     }
   }
 
@@ -312,11 +346,14 @@ const Visitors = () => {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Student</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Student <span className="text-red-500">*</span>
+                    </label>
                     <select
                       value={formData.student_id}
                       onChange={(e) => setFormData({ ...formData, student_id: e.target.value })}
                       className="input-field"
+                      required
                     >
                       <option value="">Select Student</option>
                       {students.map(student => (
@@ -334,6 +371,9 @@ const Visitors = () => {
                       onChange={(e) => setFormData({ ...formData, visitor_name: e.target.value })}
                       className="input-field"
                       required
+                      pattern=".*[a-zA-Z].*"
+                      title="Visitor name must contain at least one letter (cannot be just numbers)"
+                      placeholder="Enter visitor's full name"
                     />
                   </div>
                   <div>

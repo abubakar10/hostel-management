@@ -32,7 +32,16 @@ router.get('/menu', authenticateToken, setHostelContext, async (req, res) => {
     query += ' ORDER BY date DESC, meal_type';
 
     const result = await pool.query(query, params);
-    res.json(result.rows);
+    
+    // Parse menu_items if it's stored as JSON string
+    const menus = result.rows.map(row => ({
+      ...row,
+      menu_items: typeof row.menu_items === 'string' 
+        ? (row.menu_items.startsWith('[') ? JSON.parse(row.menu_items) : row.menu_items.split(',').map(item => item.trim()))
+        : Array.isArray(row.menu_items) ? row.menu_items : []
+    }));
+    
+    res.json(menus);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -188,39 +197,45 @@ router.post('/attendance/bulk', authenticateToken, setHostelContext, async (req,
 
 // ========== MESS FEES ROUTES ==========
 
-// Get mess fees
+// Get mess fees (read from fees table where fee_type = 'mess')
 router.get('/fees', authenticateToken, setHostelContext, async (req, res) => {
   try {
     let query = `
-      SELECT m.*, s.first_name, s.last_name, s.student_id
-      FROM mess_fees m
-      LEFT JOIN students s ON m.student_id = s.id
-      WHERE 1=1
+      SELECT 
+        f.*,
+        s.first_name, 
+        s.last_name, 
+        s.student_id,
+        EXTRACT(MONTH FROM f.due_date)::INTEGER as month,
+        EXTRACT(YEAR FROM f.due_date)::INTEGER as year
+      FROM fees f
+      LEFT JOIN students s ON f.student_id = s.id
+      WHERE f.fee_type = 'mess'
     `;
     const params = [];
     let paramCount = 1;
 
     if (req.user.role !== 'super_admin' || req.query.hostel_id) {
-      query += ` AND m.hostel_id = $${paramCount++}`;
+      query += ` AND f.hostel_id = $${paramCount++}`;
       params.push(req.hostelId || req.query.hostel_id);
     }
 
     if (req.query.month) {
-      query += ` AND m.month = $${paramCount++}`;
+      query += ` AND EXTRACT(MONTH FROM f.due_date) = $${paramCount++}`;
       params.push(req.query.month);
     }
 
     if (req.query.year) {
-      query += ` AND m.year = $${paramCount++}`;
+      query += ` AND EXTRACT(YEAR FROM f.due_date) = $${paramCount++}`;
       params.push(req.query.year);
     }
 
     if (req.query.status) {
-      query += ` AND m.status = $${paramCount++}`;
+      query += ` AND f.status = $${paramCount++}`;
       params.push(req.query.status);
     }
 
-    query += ' ORDER BY m.year DESC, m.month DESC';
+    query += ' ORDER BY f.due_date DESC';
 
     const result = await pool.query(query, params);
     res.json(result.rows);
@@ -229,35 +244,16 @@ router.get('/fees', authenticateToken, setHostelContext, async (req, res) => {
   }
 });
 
-// Create mess fee
-router.post('/fees', authenticateToken, setHostelContext, async (req, res) => {
-  try {
-    const { student_id, month, year, amount, hostel_id } = req.body;
-
-    const finalHostelId = hostel_id || req.hostelId;
-    if (!finalHostelId) {
-      return res.status(400).json({ error: 'Hostel ID is required' });
-    }
-
-    const result = await pool.query(
-      `INSERT INTO mess_fees (student_id, month, year, amount, status, hostel_id)
-       VALUES ($1, $2, $3, $4, 'pending', $5) RETURNING *`,
-      [student_id, month, year, amount, finalHostelId]
-    );
-
-    res.status(201).json(result.rows[0]);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Update mess fee (mark as paid)
+// Update mess fee (mark as paid) - update in fees table
 router.put('/fees/:id', authenticateToken, async (req, res) => {
   try {
     const { status, paid_date } = req.body;
 
     const result = await pool.query(
-      `UPDATE mess_fees SET status = $1, paid_date = $2 WHERE id = $3 RETURNING *`,
+      `UPDATE fees 
+       SET status = $1, paid_date = $2 
+       WHERE id = $3 AND fee_type = 'mess' 
+       RETURNING *`,
       [status || 'paid', paid_date || new Date().toISOString().split('T')[0], req.params.id]
     );
 
@@ -271,10 +267,18 @@ router.put('/fees/:id', authenticateToken, async (req, res) => {
   }
 });
 
-// Delete mess fee
+// Delete mess fee - delete from fees table
 router.delete('/fees/:id', authenticateToken, async (req, res) => {
   try {
-    await pool.query('DELETE FROM mess_fees WHERE id = $1', [req.params.id]);
+    const result = await pool.query(
+      'DELETE FROM fees WHERE id = $1 AND fee_type = \'mess\' RETURNING *',
+      [req.params.id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Mess fee not found' });
+    }
+    
     res.json({ message: 'Mess fee deleted successfully' });
   } catch (error) {
     res.status(500).json({ error: error.message });

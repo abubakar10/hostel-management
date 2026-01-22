@@ -192,11 +192,50 @@ router.put('/maintenance/:id', authenticateToken, async (req, res) => {
   try {
     const { status, assigned_to, cost, completed_date } = req.body;
 
+    // Validate required fields
+    if (!status || status.toString().trim() === '') {
+      return res.status(400).json({ error: 'Status is required' });
+    }
+
+    // Validate status values
+    const validStatuses = ['pending', 'in_progress', 'completed'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ error: 'Invalid status. Must be one of: pending, in_progress, completed' });
+    }
+
+    // Validate assigned_to for in_progress or completed status
+    if ((status === 'in_progress' || status === 'completed') && (!assigned_to || assigned_to.toString().trim() === '')) {
+      return res.status(400).json({ error: 'Staff assignment is required for in-progress or completed requests' });
+    }
+
+    // Validate cost if provided
+    let costValue = null;
+    if (cost !== null && cost !== undefined && cost.toString().trim() !== '') {
+      costValue = parseFloat(cost);
+      if (isNaN(costValue) || costValue < 0) {
+        return res.status(400).json({ error: 'Cost must be a valid positive number' });
+      }
+    }
+
+    // Validate completed_date if provided
+    let completedDateValue = null;
+    if (completed_date !== null && completed_date !== undefined && completed_date.toString().trim() !== '') {
+      const dateValue = new Date(completed_date);
+      if (isNaN(dateValue.getTime())) {
+        return res.status(400).json({ error: 'Completed date must be a valid date' });
+      }
+      completedDateValue = completed_date;
+    }
+
     const result = await pool.query(
       `UPDATE maintenance_requests SET status = $1, assigned_to = $2, cost = $3, 
        completed_date = $4, updated_at = CURRENT_TIMESTAMP WHERE id = $5 RETURNING *`,
-      [status, assigned_to, cost, completed_date, req.params.id]
+      [status, assigned_to || null, costValue, completedDateValue, req.params.id]
     );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Maintenance request not found' });
+    }
 
     res.json(result.rows[0]);
   } catch (error) {

@@ -58,6 +58,40 @@ router.post('/', authenticateToken, setHostelContext, async (req, res) => {
       purchase_date, purchase_price, supplier, hostel_id
     } = req.body;
 
+    // Validate required fields
+    if (!item_name || item_name.toString().trim() === '') {
+      return res.status(400).json({ error: 'Item name is required' });
+    }
+
+    if (!quantity || quantity.toString().trim() === '') {
+      return res.status(400).json({ error: 'Quantity is required' });
+    }
+
+    const quantityValue = parseFloat(quantity);
+    if (isNaN(quantityValue) || quantityValue < 0) {
+      return res.status(400).json({ error: 'Quantity must be a valid positive number' });
+    }
+
+    // Validate purchase_date if provided
+    let purchaseDateValue = null;
+    if (purchase_date !== null && purchase_date !== undefined && purchase_date.toString().trim() !== '') {
+      const dateValue = new Date(purchase_date);
+      if (isNaN(dateValue.getTime())) {
+        return res.status(400).json({ error: 'Purchase date must be a valid date' });
+      }
+      purchaseDateValue = purchase_date;
+    }
+
+    // Validate purchase_price if provided
+    let purchasePriceValue = null;
+    if (purchase_price !== null && purchase_price !== undefined && purchase_price.toString().trim() !== '') {
+      const priceValue = parseFloat(purchase_price);
+      if (isNaN(priceValue) || priceValue < 0) {
+        return res.status(400).json({ error: 'Purchase price must be a valid positive number' });
+      }
+      purchasePriceValue = priceValue;
+    }
+
     const finalHostelId = hostel_id || req.hostelId;
     if (!finalHostelId) {
       return res.status(400).json({ error: 'Hostel ID is required' });
@@ -67,8 +101,18 @@ router.post('/', authenticateToken, setHostelContext, async (req, res) => {
       `INSERT INTO inventory (item_name, category, quantity, unit, location, condition,
        purchase_date, purchase_price, supplier, hostel_id)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
-      [item_name, category, quantity, unit, location, condition,
-       purchase_date, purchase_price, supplier, finalHostelId]
+      [
+        item_name,
+        category || null,
+        quantityValue,
+        unit || 'pieces',
+        location || null,
+        condition || 'good',
+        purchaseDateValue,
+        purchasePriceValue,
+        supplier || null,
+        finalHostelId
+      ]
     );
 
     res.status(201).json(result.rows[0]);
@@ -85,13 +129,57 @@ router.put('/:id', authenticateToken, async (req, res) => {
       purchase_date, purchase_price, supplier
     } = req.body;
 
+    // Validate required fields
+    if (!item_name || item_name.toString().trim() === '') {
+      return res.status(400).json({ error: 'Item name is required' });
+    }
+
+    if (!quantity || quantity.toString().trim() === '') {
+      return res.status(400).json({ error: 'Quantity is required' });
+    }
+
+    const quantityValue = parseFloat(quantity);
+    if (isNaN(quantityValue) || quantityValue < 0) {
+      return res.status(400).json({ error: 'Quantity must be a valid positive number' });
+    }
+
+    // Validate purchase_date if provided
+    let purchaseDateValue = null;
+    if (purchase_date !== null && purchase_date !== undefined && purchase_date.toString().trim() !== '') {
+      const dateValue = new Date(purchase_date);
+      if (isNaN(dateValue.getTime())) {
+        return res.status(400).json({ error: 'Purchase date must be a valid date' });
+      }
+      purchaseDateValue = purchase_date;
+    }
+
+    // Validate purchase_price if provided
+    let purchasePriceValue = null;
+    if (purchase_price !== null && purchase_price !== undefined && purchase_price.toString().trim() !== '') {
+      const priceValue = parseFloat(purchase_price);
+      if (isNaN(priceValue) || priceValue < 0) {
+        return res.status(400).json({ error: 'Purchase price must be a valid positive number' });
+      }
+      purchasePriceValue = priceValue;
+    }
+
     const result = await pool.query(
       `UPDATE inventory SET item_name = $1, category = $2, quantity = $3, unit = $4,
        location = $5, condition = $6, purchase_date = $7, purchase_price = $8,
        supplier = $9, updated_at = CURRENT_TIMESTAMP
        WHERE id = $10 RETURNING *`,
-      [item_name, category, quantity, unit, location, condition,
-       purchase_date, purchase_price, supplier, req.params.id]
+      [
+        item_name,
+        category || null,
+        quantityValue,
+        unit || 'pieces',
+        location || null,
+        condition || 'good',
+        purchaseDateValue,
+        purchasePriceValue,
+        supplier || null,
+        req.params.id
+      ]
     );
 
     if (result.rows.length === 0) {

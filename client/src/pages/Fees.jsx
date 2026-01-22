@@ -69,14 +69,20 @@ const Fees = () => {
           room_type: data.room_type,
           price: data.calculated_amount
         })
+        setCalculatedAmount(data.calculated_amount)
         // Auto-calculate amount for hostel fees
         // Use functional update to preserve student_id and other fields
         setFormData(prevFormData => {
+          // Always preserve student_id and all other fields
           if (prevFormData.fee_type === 'hostel') {
-            setCalculatedAmount(data.calculated_amount)
-            return { ...prevFormData, amount: data.calculated_amount.toString() }
+            return { 
+              ...prevFormData, 
+              student_id: studentId, // Explicitly set student_id to ensure it's preserved
+              amount: data.calculated_amount.toString() 
+            }
           }
-          return prevFormData // Don't change anything if not hostel fee
+          // If not hostel fee, preserve everything including student_id
+          return { ...prevFormData, student_id: studentId }
         })
       } else {
         setRoomInfo(null)
@@ -84,9 +90,14 @@ const Fees = () => {
         // Use functional update to preserve student_id
         setFormData(prevFormData => {
           if (prevFormData.fee_type === 'hostel') {
-            return { ...prevFormData, amount: '' }
+            return { 
+              ...prevFormData, 
+              student_id: studentId, // Explicitly set student_id to ensure it's preserved
+              amount: '' 
+            }
           }
-          return prevFormData
+          // If not hostel fee, preserve everything including student_id
+          return { ...prevFormData, student_id: studentId }
         })
       }
     } catch (error) {
@@ -96,9 +107,14 @@ const Fees = () => {
       // Use functional update to preserve student_id
       setFormData(prevFormData => {
         if (prevFormData.fee_type === 'hostel') {
-          return { ...prevFormData, amount: '' }
+          return { 
+            ...prevFormData, 
+            student_id: studentId, // Explicitly set student_id to ensure it's preserved
+            amount: '' 
+          }
         }
-        return prevFormData
+        // If not hostel fee, preserve everything including student_id
+        return { ...prevFormData, student_id: studentId }
       })
     }
   }
@@ -572,7 +588,10 @@ const Fees = () => {
                 <input
                   type="number"
                   value={formData.amount}
-                  onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                  onChange={(e) => setFormData(prevFormData => ({ 
+                    ...prevFormData, 
+                    amount: e.target.value 
+                  }))}
                   className="input-field min-h-[48px] sm:min-h-[44px] text-base sm:text-sm"
                   required
                   min="0"
@@ -592,7 +611,10 @@ const Fees = () => {
                 <input
                   type="date"
                   value={formData.due_date}
-                  onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
+                  onChange={(e) => setFormData(prevFormData => ({ 
+                    ...prevFormData, 
+                    due_date: e.target.value 
+                  }))}
                   className="input-field min-h-[48px] sm:min-h-[44px] text-base sm:text-sm"
                   required
                   onInvalid={(e) => {

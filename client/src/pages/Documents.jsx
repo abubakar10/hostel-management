@@ -11,6 +11,7 @@ const Documents = () => {
   const [documents, setDocuments] = useState([])
   const [students, setStudents] = useState([])
   const [loading, setLoading] = useState(true)
+  const [uploading, setUploading] = useState(false)
   const [showModal, setShowModal] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [studentFilter, setStudentFilter] = useState('all')
@@ -52,11 +53,36 @@ const Documents = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    
+    // Validate required fields
+    if (!formData.student_id || formData.student_id.toString().trim() === '') {
+      showError('Please select a student')
+      return
+    }
+    
     if (!formData.file) {
       showError('Please select a file to upload')
       return
     }
+    
+    // Validate file size (10MB = 10 * 1024 * 1024 bytes)
+    const maxSize = 10 * 1024 * 1024 // 10MB
+    if (formData.file.size > maxSize) {
+      showError(`File size exceeds the maximum limit of 10MB. Your file is ${(formData.file.size / (1024 * 1024)).toFixed(2)}MB`)
+      return
+    }
+    
+    // Validate file type
+    const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'image/jpeg', 'image/jpg', 'image/png']
+    const allowedExtensions = ['.pdf', '.doc', '.docx', '.jpg', '.jpeg', '.png']
+    const fileExtension = '.' + formData.file.name.split('.').pop().toLowerCase()
+    
+    if (!allowedTypes.includes(formData.file.type) && !allowedExtensions.includes(fileExtension)) {
+      showError('Invalid file type. Only PDF, DOC, DOCX, JPG, and PNG files are allowed.')
+      return
+    }
 
+    setUploading(true)
     try {
       const uploadData = new FormData()
       uploadData.append('file', formData.file)
@@ -66,14 +92,26 @@ const Documents = () => {
       await api.post('/api/documents', uploadData, {
         headers: {
           'Content-Type': 'multipart/form-data'
-        }
+        },
+        timeout: 60000 // 60 seconds timeout for large files
       })
       showSuccess('Document uploaded successfully')
       fetchDocuments()
       setShowModal(false)
       resetForm()
     } catch (error) {
-      showError(error.response?.data?.error || 'Error uploading document')
+      // Handle different types of errors
+      if (error.response?.data?.error) {
+        showError(error.response.data.error)
+      } else if (error.code === 'ECONNABORTED') {
+        showError('Upload timeout. Please try again with a smaller file.')
+      } else if (error.message?.includes('Network Error')) {
+        showError('Network error. Please check your connection and try again.')
+      } else {
+        showError('Error uploading document. Please try again.')
+      }
+    } finally {
+      setUploading(false)
     }
   }
 
@@ -333,29 +371,65 @@ const Documents = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">File *</label>
-                  <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600">
+                  <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
                     <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                      <Upload className="w-8 h-8 mb-2 text-gray-500" />
-                      <p className="mb-2 text-sm text-gray-500">
+                      <Upload className="w-8 h-8 mb-2 text-gray-500 dark:text-gray-400" />
+                      <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
                         <span className="font-semibold">Click to upload</span> or drag and drop
                       </p>
-                      <p className="text-xs text-gray-500">PDF, DOC, DOCX, JPG, PNG (MAX. 10MB)</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">PDF, DOC, DOCX, JPG, PNG (MAX. 10MB)</p>
                     </div>
                     <input
                       type="file"
                       className="hidden"
-                      onChange={(e) => setFormData({ ...formData, file: e.target.files[0] })}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        if (file) {
+                          // Validate file size
+                          const maxSize = 10 * 1024 * 1024 // 10MB
+                          if (file.size > maxSize) {
+                            showError(`File size exceeds 10MB. Your file is ${(file.size / (1024 * 1024)).toFixed(2)}MB`)
+                            e.target.value = '' // Clear the input
+                            return
+                          }
+                          // Validate file type
+                          const allowedExtensions = ['.pdf', '.doc', '.docx', '.jpg', '.jpeg', '.png']
+                          const fileExtension = '.' + file.name.split('.').pop().toLowerCase()
+                          if (!allowedExtensions.includes(fileExtension)) {
+                            showError('Invalid file type. Only PDF, DOC, DOCX, JPG, and PNG files are allowed.')
+                            e.target.value = '' // Clear the input
+                            return
+                          }
+                          setFormData({ ...formData, file: file })
+                        }
+                      }}
                       accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
                       required
                     />
                   </label>
                   {formData.file && (
-                    <p className="mt-2 text-sm text-gray-600">{formData.file.name}</p>
+                    <div className="mt-2 p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                      <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{formData.file.name}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Size: {(formData.file.size / (1024 * 1024)).toFixed(2)} MB
+                      </p>
+                    </div>
                   )}
                 </div>
                 <div className="flex gap-4 pt-4">
-                  <button type="submit" className="btn-primary flex-1">
-                    Upload Document
+                  <button 
+                    type="submit" 
+                    className="btn-primary flex-1"
+                    disabled={uploading}
+                  >
+                    {uploading ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        Uploading...
+                      </span>
+                    ) : (
+                      'Upload Document'
+                    )}
                   </button>
                   <button
                     type="button"
@@ -364,6 +438,7 @@ const Documents = () => {
                       resetForm()
                     }}
                     className="btn-secondary flex-1"
+                    disabled={uploading}
                   >
                     Cancel
                   </button>

@@ -44,12 +44,59 @@ const Inventory = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    
+    // Validate required fields
+    if (!formData.item_name || formData.item_name.trim() === '') {
+      showError('Please enter item name')
+      return
+    }
+    
+    if (!formData.quantity || formData.quantity.toString().trim() === '') {
+      showError('Please enter quantity')
+      return
+    }
+    
+    const quantityValue = parseFloat(formData.quantity)
+    if (isNaN(quantityValue) || quantityValue < 0) {
+      showError('Quantity must be a valid positive number')
+      return
+    }
+    
+    // Validate purchase_date if provided (must be valid date)
+    if (formData.purchase_date && formData.purchase_date.trim() !== '') {
+      const dateValue = new Date(formData.purchase_date)
+      if (isNaN(dateValue.getTime())) {
+        showError('Please enter a valid purchase date')
+        return
+      }
+    }
+    
+    // Validate purchase_price if provided (must be valid positive number)
+    if (formData.purchase_price && formData.purchase_price.toString().trim() !== '') {
+      const priceValue = parseFloat(formData.purchase_price)
+      if (isNaN(priceValue) || priceValue < 0) {
+        showError('Purchase price must be a valid positive number')
+        return
+      }
+    }
+    
     try {
+      // Prepare data - convert empty strings to null for optional fields
+      const dataToSend = {
+        ...formData,
+        quantity: quantityValue,
+        purchase_date: formData.purchase_date && formData.purchase_date.trim() !== '' ? formData.purchase_date : null,
+        purchase_price: formData.purchase_price && formData.purchase_price.toString().trim() !== '' ? parseFloat(formData.purchase_price) : null,
+        category: formData.category && formData.category.trim() !== '' ? formData.category : null,
+        location: formData.location && formData.location.trim() !== '' ? formData.location : null,
+        supplier: formData.supplier && formData.supplier.trim() !== '' ? formData.supplier : null
+      }
+      
       if (editingItem) {
-        await api.put(`/api/inventory/${editingItem.id}`, formData)
+        await api.put(`/api/inventory/${editingItem.id}`, dataToSend)
         showSuccess('Inventory item updated successfully')
       } else {
-        await api.post('/api/inventory', formData)
+        await api.post('/api/inventory', dataToSend)
         showSuccess('Inventory item added successfully')
       }
       fetchInventory()
@@ -360,17 +407,44 @@ const Inventory = () => {
                       value={formData.purchase_date}
                       onChange={(e) => setFormData({ ...formData, purchase_date: e.target.value })}
                       className="input-field"
+                      max={new Date().toISOString().split('T')[0]}
                     />
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      Leave empty if purchase date is not available
+                    </p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Purchase Price (RS)</label>
                     <input
                       type="number"
                       step="0.01"
+                      min="0"
                       value={formData.purchase_price}
-                      onChange={(e) => setFormData({ ...formData, purchase_price: e.target.value })}
+                      onChange={(e) => {
+                        const value = e.target.value
+                        // Allow empty or valid positive numbers
+                        if (value === '' || (!isNaN(parseFloat(value)) && parseFloat(value) >= 0)) {
+                          setFormData({ ...formData, purchase_price: value })
+                        }
+                      }}
+                      onBlur={(e) => {
+                        // Format on blur - ensure it's a valid number
+                        const value = e.target.value
+                        if (value && value.trim() !== '') {
+                          const numValue = parseFloat(value)
+                          if (!isNaN(numValue) && numValue >= 0) {
+                            setFormData({ ...formData, purchase_price: numValue.toFixed(2) })
+                          } else {
+                            setFormData({ ...formData, purchase_price: '' })
+                          }
+                        }
+                      }}
                       className="input-field"
+                      placeholder="0.00"
                     />
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      Leave empty if price is not available. Only positive values allowed.
+                    </p>
                   </div>
                   <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Supplier</label>

@@ -71,6 +71,39 @@ router.post('/', authenticateToken, setHostelContext, async (req, res) => {
       staff_id, first_name, last_name, email, phone, role, shift, salary, hire_date, status, hostel_id
     } = req.body;
 
+    // Validate required fields
+    if (!staff_id || staff_id.toString().trim() === '') {
+      return res.status(400).json({ error: 'Staff ID is required' });
+    }
+    if (!first_name || first_name.trim() === '') {
+      return res.status(400).json({ error: 'First name is required' });
+    }
+    if (!last_name || last_name.trim() === '') {
+      return res.status(400).json({ error: 'Last name is required' });
+    }
+    if (!email || email.trim() === '') {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    // Validate salary if provided
+    let salaryValue = null;
+    if (salary !== null && salary !== undefined && salary.toString().trim() !== '') {
+      salaryValue = parseFloat(salary);
+      if (isNaN(salaryValue) || salaryValue < 0) {
+        return res.status(400).json({ error: 'Salary must be a valid positive number' });
+      }
+    }
+
+    // Validate hire_date if provided
+    let hireDateValue = null;
+    if (hire_date !== null && hire_date !== undefined && hire_date.toString().trim() !== '') {
+      const dateValue = new Date(hire_date);
+      if (isNaN(dateValue.getTime())) {
+        return res.status(400).json({ error: 'Hire date must be a valid date' });
+      }
+      hireDateValue = hire_date;
+    }
+
     const finalHostelId = hostel_id || req.hostelId;
     if (!finalHostelId) {
       return res.status(400).json({ error: 'Hostel ID is required' });
@@ -79,7 +112,7 @@ router.post('/', authenticateToken, setHostelContext, async (req, res) => {
     const result = await pool.query(
       `INSERT INTO staff (staff_id, first_name, last_name, email, phone, role, shift, salary, hire_date, status, hostel_id)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
-      [staff_id, first_name, last_name, email, phone, role, shift, salary, hire_date, status || 'active', finalHostelId]
+      [staff_id, first_name, last_name, email, phone || null, role, shift || null, salaryValue, hireDateValue, status || 'active', finalHostelId]
     );
 
     res.status(201).json(result.rows[0]);
@@ -98,12 +131,46 @@ router.put('/:id', authenticateToken, async (req, res) => {
       first_name, last_name, email, phone, role, shift, salary, hire_date, status
     } = req.body;
 
+    // Validate required fields
+    if (!first_name || first_name.trim() === '') {
+      return res.status(400).json({ error: 'First name is required' });
+    }
+    if (!last_name || last_name.trim() === '') {
+      return res.status(400).json({ error: 'Last name is required' });
+    }
+    if (!email || email.trim() === '') {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    // Validate salary if provided
+    let salaryValue = null;
+    if (salary !== null && salary !== undefined && salary.toString().trim() !== '') {
+      salaryValue = parseFloat(salary);
+      if (isNaN(salaryValue) || salaryValue < 0) {
+        return res.status(400).json({ error: 'Salary must be a valid positive number' });
+      }
+    }
+
+    // Validate hire_date if provided
+    let hireDateValue = null;
+    if (hire_date !== null && hire_date !== undefined && hire_date.toString().trim() !== '') {
+      const dateValue = new Date(hire_date);
+      if (isNaN(dateValue.getTime())) {
+        return res.status(400).json({ error: 'Hire date must be a valid date' });
+      }
+      hireDateValue = hire_date;
+    }
+
     const result = await pool.query(
       `UPDATE staff SET first_name = $1, last_name = $2, email = $3, phone = $4, 
        role = $5, shift = $6, salary = $7, hire_date = $8, status = $9
        WHERE id = $10 RETURNING *`,
-      [first_name, last_name, email, phone, role, shift, salary, hire_date, status, req.params.id]
+      [first_name, last_name, email, phone || null, role, shift || null, salaryValue, hireDateValue, status, req.params.id]
     );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Staff member not found' });
+    }
 
     res.json(result.rows[0]);
   } catch (error) {

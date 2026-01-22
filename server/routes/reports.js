@@ -47,11 +47,17 @@ router.get('/income-expenses/:year/:month', authenticateToken, setHostelContext,
     const expenses = await pool.query(expensesQuery, expensesParams);
 
     // Staff salaries
-    const salaries = await pool.query(`
+    let salariesQuery = `
       SELECT SUM(salary) as total_salaries
       FROM staff
       WHERE status = 'active'
-    `);
+    `;
+    const salariesParams = [];
+    if (hostelId && req.user.role !== 'super_admin') {
+      salariesQuery += ` AND hostel_id = $1`;
+      salariesParams.push(hostelId);
+    }
+    const salaries = await pool.query(salariesQuery, salariesParams);
 
     res.json({
       income: income.rows[0],
@@ -68,32 +74,51 @@ router.get('/income-expenses/:year/:month', authenticateToken, setHostelContext,
 });
 
 // Profit/Loss Analysis
-router.get('/profit-loss/:year', authenticateToken, async (req, res) => {
+router.get('/profit-loss/:year', authenticateToken, setHostelContext, async (req, res) => {
   try {
     const { year } = req.params;
+    const hostelId = req.query.hostel_id || req.hostelId;
 
     const monthlyData = [];
     for (let month = 1; month <= 12; month++) {
-      const income = await pool.query(`
+      let incomeQuery = `
         SELECT SUM(amount) as total
         FROM fees
         WHERE EXTRACT(YEAR FROM paid_date) = $1 
           AND EXTRACT(MONTH FROM paid_date) = $2
           AND status = 'paid'
-      `, [year, month]);
+      `;
+      const incomeParams = [year, month];
+      if (hostelId && req.user.role !== 'super_admin') {
+        incomeQuery += ` AND hostel_id = $3`;
+        incomeParams.push(hostelId);
+      }
+      const income = await pool.query(incomeQuery, incomeParams);
 
-      const expenses = await pool.query(`
+      let expensesQuery = `
         SELECT SUM(amount) as total
         FROM expenses
         WHERE EXTRACT(YEAR FROM date) = $1 
           AND EXTRACT(MONTH FROM date) = $2
-      `, [year, month]);
+      `;
+      const expensesParams = [year, month];
+      if (hostelId && req.user.role !== 'super_admin') {
+        expensesQuery += ` AND hostel_id = $3`;
+        expensesParams.push(hostelId);
+      }
+      const expenses = await pool.query(expensesQuery, expensesParams);
 
-      const salaries = await pool.query(`
+      let salariesQuery = `
         SELECT SUM(salary) as total
         FROM staff
         WHERE status = 'active'
-      `);
+      `;
+      const salariesParams = [];
+      if (hostelId && req.user.role !== 'super_admin') {
+        salariesQuery += ` AND hostel_id = $1`;
+        salariesParams.push(hostelId);
+      }
+      const salaries = await pool.query(salariesQuery, salariesParams);
 
       const totalIncome = parseFloat(income.rows[0].total || 0);
       const totalExpenses = parseFloat(expenses.rows[0].total || 0) + parseFloat(salaries.rows[0].total || 0);
@@ -115,28 +140,41 @@ router.get('/profit-loss/:year', authenticateToken, async (req, res) => {
 });
 
 // Category Breakdown
-router.get('/category-breakdown/:year/:month', authenticateToken, async (req, res) => {
+router.get('/category-breakdown/:year/:month', authenticateToken, setHostelContext, async (req, res) => {
   try {
     const { year, month } = req.params;
+    const hostelId = req.query.hostel_id || req.hostelId;
 
     // Fee categories
-    const feeCategories = await pool.query(`
+    let feeCategoriesQuery = `
       SELECT fee_type as category, SUM(amount) as amount
       FROM fees
       WHERE EXTRACT(YEAR FROM paid_date) = $1 
         AND EXTRACT(MONTH FROM paid_date) = $2
         AND status = 'paid'
-      GROUP BY fee_type
-    `, [year, month]);
+    `;
+    const feeCategoriesParams = [year, month];
+    if (hostelId && req.user.role !== 'super_admin') {
+      feeCategoriesQuery += ` AND hostel_id = $3`;
+      feeCategoriesParams.push(hostelId);
+    }
+    feeCategoriesQuery += ` GROUP BY fee_type`;
+    const feeCategories = await pool.query(feeCategoriesQuery, feeCategoriesParams);
 
     // Expense categories
-    const expenseCategories = await pool.query(`
+    let expenseCategoriesQuery = `
       SELECT category, SUM(amount) as amount
       FROM expenses
       WHERE EXTRACT(YEAR FROM date) = $1 
         AND EXTRACT(MONTH FROM date) = $2
-      GROUP BY category
-    `, [year, month]);
+    `;
+    const expenseCategoriesParams = [year, month];
+    if (hostelId && req.user.role !== 'super_admin') {
+      expenseCategoriesQuery += ` AND hostel_id = $3`;
+      expenseCategoriesParams.push(hostelId);
+    }
+    expenseCategoriesQuery += ` GROUP BY category`;
+    const expenseCategories = await pool.query(expenseCategoriesQuery, expenseCategoriesParams);
 
     res.json({
       income: feeCategories.rows,
@@ -148,26 +186,39 @@ router.get('/category-breakdown/:year/:month', authenticateToken, async (req, re
 });
 
 // Monthly Comparisons
-router.get('/monthly-comparison/:year', authenticateToken, async (req, res) => {
+router.get('/monthly-comparison/:year', authenticateToken, setHostelContext, async (req, res) => {
   try {
     const { year } = req.params;
+    const hostelId = req.query.hostel_id || req.hostelId;
     const comparison = [];
 
     for (let month = 1; month <= 12; month++) {
-      const income = await pool.query(`
+      let incomeQuery = `
         SELECT SUM(amount) as total
         FROM fees
         WHERE EXTRACT(YEAR FROM paid_date) = $1 
           AND EXTRACT(MONTH FROM paid_date) = $2
           AND status = 'paid'
-      `, [year, month]);
+      `;
+      const incomeParams = [year, month];
+      if (hostelId && req.user.role !== 'super_admin') {
+        incomeQuery += ` AND hostel_id = $3`;
+        incomeParams.push(hostelId);
+      }
+      const income = await pool.query(incomeQuery, incomeParams);
 
-      const expenses = await pool.query(`
+      let expensesQuery = `
         SELECT SUM(amount) as total
         FROM expenses
         WHERE EXTRACT(YEAR FROM date) = $1 
           AND EXTRACT(MONTH FROM date) = $2
-      `, [year, month]);
+      `;
+      const expensesParams = [year, month];
+      if (hostelId && req.user.role !== 'super_admin') {
+        expensesQuery += ` AND hostel_id = $3`;
+        expensesParams.push(hostelId);
+      }
+      const expenses = await pool.query(expensesQuery, expensesParams);
 
       comparison.push({
         month,

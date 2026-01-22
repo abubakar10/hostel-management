@@ -14,11 +14,12 @@ const Notifications = () => {
 
   const fetchNotifications = async () => {
     try {
-      const params = filter !== 'all' ? { is_read: filter === 'read' } : {}
+      const params = filter !== 'all' ? { is_read: filter === 'read' ? 'true' : 'false' } : {}
       const response = await api.get('/api/notifications', { params })
-      setNotifications(response.data)
+      setNotifications(response.data || [])
     } catch (error) {
       console.error('Error fetching notifications:', error)
+      setNotifications([])
     } finally {
       setLoading(false)
     }
