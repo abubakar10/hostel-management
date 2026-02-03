@@ -21,7 +21,7 @@ const Header = ({ onMenuClick }) => {
             >
               <Menu size={24} />
             </button>
-          <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-primary-600 dark:text-primary-400">Hostel Management</h1>
+          <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-primary-600 dark:text-primary-400">{user?.username || 'Admin'}</h1>
         </div>
 
         <div className="flex items-center gap-1.5 sm:gap-2 md:gap-4">

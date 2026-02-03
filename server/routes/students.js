@@ -58,7 +58,7 @@ router.post('/', authenticateToken, setHostelContext, async (req, res) => {
   try {
     const {
       student_id, first_name, last_name, email, phone, address,
-      date_of_birth, gender, course, year_of_study, room_id, status, hostel_id
+      date_of_birth, gender, resident_type, course, year_of_study, room_id, status, hostel_id
     } = req.body;
 
     // Use provided hostel_id or default to user's hostel
@@ -100,13 +100,19 @@ router.post('/', authenticateToken, setHostelContext, async (req, res) => {
       }
     }
 
+    // Validate and set default resident_type
+    const validResidentTypes = ['student', 'job_based', 'short_term'];
+    const finalResidentType = (resident_type && validResidentTypes.includes(resident_type)) 
+      ? resident_type 
+      : 'student';
+
     const result = await pool.query(
       `INSERT INTO students (student_id, first_name, last_name, email, phone, address, 
-       date_of_birth, gender, course, year_of_study, room_id, status, hostel_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+       date_of_birth, gender, resident_type, course, year_of_study, room_id, status, hostel_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
        RETURNING *`,
       [student_id, first_name, last_name, email, phone || null, address || null,
-       normalizedDateOfBirth, gender || null, course || null, year_of_study || null, 
+       normalizedDateOfBirth, gender || null, finalResidentType, course || null, year_of_study || null, 
        room_id || null, status || 'active', finalHostelId]
     );
 
@@ -142,7 +148,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
   try {
     const {
       first_name, last_name, email, phone, address,
-      date_of_birth, gender, course, year_of_study, room_id, status
+      date_of_birth, gender, resident_type, course, year_of_study, room_id, status
     } = req.body;
 
     // Validate required fields
@@ -181,13 +187,19 @@ router.put('/:id', authenticateToken, async (req, res) => {
     const oldStudent = await pool.query('SELECT room_id FROM students WHERE id = $1', [req.params.id]);
     const oldRoomId = oldStudent.rows[0]?.room_id;
 
+    // Validate and set default resident_type
+    const validResidentTypes = ['student', 'job_based', 'short_term'];
+    const finalResidentType = (resident_type && validResidentTypes.includes(resident_type)) 
+      ? resident_type 
+      : 'student';
+
     const result = await pool.query(
       `UPDATE students SET first_name = $1, last_name = $2, email = $3, phone = $4, 
-       address = $5, date_of_birth = $6, gender = $7, course = $8, year_of_study = $9, 
-       room_id = $10, status = $11, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $12 RETURNING *`,
+       address = $5, date_of_birth = $6, gender = $7, resident_type = $8, course = $9, year_of_study = $10, 
+       room_id = $11, status = $12, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $13 RETURNING *`,
       [first_name, last_name, email, phone || null, address || null, normalizedDateOfBirth, 
-       gender || null, course || null, year_of_study || null, room_id || null, status, req.params.id]
+       gender || null, finalResidentType, course || null, year_of_study || null, room_id || null, status, req.params.id]
     );
 
     // Update room status for both old and new rooms

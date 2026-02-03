@@ -23,6 +23,7 @@ const Students = () => {
     address: '',
     date_of_birth: '',
     gender: '',
+    resident_type: 'student',
     course: '',
     year_of_study: '',
     room_id: null,
@@ -145,6 +146,7 @@ const Students = () => {
       address: student.address || '',
       date_of_birth: student.date_of_birth || '',
       gender: student.gender || '',
+      resident_type: student.resident_type || 'student',
       course: student.course || '',
       year_of_study: student.year_of_study || '',
       room_id: student.room_id || null,
@@ -164,6 +166,7 @@ const Students = () => {
       address: '',
       date_of_birth: '',
       gender: '',
+      resident_type: 'student',
       course: '',
       year_of_study: '',
       room_id: null,
@@ -238,6 +241,7 @@ const Students = () => {
                   <tr>
                     <th className="table-header-cell">ID</th>
                     <th className="table-header-cell">Name</th>
+                    <th className="table-header-cell">Type</th>
                     <th className="table-header-cell">Email</th>
                     <th className="table-header-cell">Course</th>
                     <th className="table-header-cell">Room</th>
@@ -258,6 +262,19 @@ const Students = () => {
                       >
                         <td className="table-cell font-medium">{student.student_id}</td>
                         <td className="table-cell">{student.first_name} {student.last_name}</td>
+                        <td className="table-cell">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            student.resident_type === 'student' 
+                              ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300' 
+                              : student.resident_type === 'job_based'
+                              ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300'
+                              : 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300'
+                          }`}>
+                            {student.resident_type === 'student' ? 'Student' : 
+                             student.resident_type === 'job_based' ? 'Job-based' : 
+                             'Short-term'}
+                          </span>
+                        </td>
                         <td className="table-cell">{student.email}</td>
                         <td className="table-cell">{student.course || 'N/A'}</td>
                         <td className="table-cell">{student.room_number || 'N/A'}</td>
@@ -328,6 +345,22 @@ const Students = () => {
 
                     {/* Card Details */}
                     <div className="space-y-2 sm:space-y-2.5 mb-4 sm:mb-5">
+                      <div className="flex items-center gap-2 sm:gap-3">
+                        <span className="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400 min-w-[80px] sm:min-w-[90px]">
+                          Type:
+                        </span>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          student.resident_type === 'student' 
+                            ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300' 
+                            : student.resident_type === 'job_based'
+                            ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300'
+                            : 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300'
+                        }`}>
+                          {student.resident_type === 'student' ? 'Student' : 
+                           student.resident_type === 'job_based' ? 'Job-based' : 
+                           'Short-term'}
+                        </span>
+                      </div>
                       <div className="flex items-start gap-2 sm:gap-3">
                         <span className="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400 min-w-[80px] sm:min-w-[90px]">
                           Email:
@@ -336,14 +369,16 @@ const Students = () => {
                           {student.email}
                         </span>
                       </div>
-                      <div className="flex items-center gap-2 sm:gap-3">
-                        <span className="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400 min-w-[80px] sm:min-w-[90px]">
-                          Course:
-                        </span>
-                        <span className="text-xs sm:text-sm text-gray-700 dark:text-gray-300">
-                          {student.course || 'N/A'}
-                        </span>
-                      </div>
+                      {student.resident_type === 'student' && (
+                        <div className="flex items-center gap-2 sm:gap-3">
+                          <span className="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400 min-w-[80px] sm:min-w-[90px]">
+                            Course:
+                          </span>
+                          <span className="text-xs sm:text-sm text-gray-700 dark:text-gray-300">
+                            {student.course || 'N/A'}
+                          </span>
+                        </div>
+                      )}
                       <div className="flex items-center gap-2 sm:gap-3">
                         <span className="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400 min-w-[80px] sm:min-w-[90px]">
                           Room:
@@ -401,7 +436,7 @@ const Students = () => {
               {/* Modal Header */}
               <div className="flex justify-between items-center mb-4 sm:mb-6 sticky top-0 bg-white dark:bg-gray-800 pb-2 sm:pb-0 z-10">
                 <h2 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-gray-100">
-                  {editingStudent ? 'Edit Student' : 'Add New Student'}
+                  {editingStudent ? 'Edit Resident' : 'Add New Resident'}
                 </h2>
                 <button
                   onClick={() => {
@@ -420,16 +455,41 @@ const Students = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div>
                     <label className="block text-sm sm:text-base font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">
-                      Student ID <span className="text-red-500">*</span>
+                      Resident ID <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
                       value={formData.student_id}
                       onChange={(e) => setFormData({ ...formData, student_id: e.target.value })}
                       className="input-field min-h-[48px] sm:min-h-[44px] text-base sm:text-sm"
+                      placeholder={formData.resident_type === 'student' ? 'Student ID' : formData.resident_type === 'job_based' ? 'Employee ID' : 'Resident ID'}
                       required
                       disabled={!!editingStudent}
                     />
+                  </div>
+                  <div>
+                    <label className="block text-sm sm:text-base font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">
+                      Resident Type <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={formData.resident_type}
+                      onChange={(e) => {
+                        const newType = e.target.value
+                        setFormData({ 
+                          ...formData, 
+                          resident_type: newType,
+                          // Clear course and year_of_study if not a student
+                          course: newType === 'student' ? formData.course : '',
+                          year_of_study: newType === 'student' ? formData.year_of_study : ''
+                        })
+                      }}
+                      className="input-field min-h-[48px] sm:min-h-[44px] text-base sm:text-sm"
+                      required
+                    >
+                      <option value="student">Student</option>
+                      <option value="job_based">Job-based (Working Professional)</option>
+                      <option value="short_term">Short-term Resident</option>
+                    </select>
                   </div>
                   <div>
                     <label className="block text-sm sm:text-base font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">
@@ -504,30 +564,36 @@ const Students = () => {
                       <option value="other">Other</option>
                     </select>
                   </div>
-                  <div>
-                    <label className="block text-sm sm:text-base font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">
-                      Course
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.course}
-                      onChange={(e) => setFormData({ ...formData, course: e.target.value })}
-                      className="input-field min-h-[48px] sm:min-h-[44px] text-base sm:text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm sm:text-base font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">
-                      Year of Study
-                    </label>
-                    <input
-                      type="number"
-                      value={formData.year_of_study}
-                      onChange={(e) => setFormData({ ...formData, year_of_study: e.target.value })}
-                      className="input-field min-h-[48px] sm:min-h-[44px] text-base sm:text-sm"
-                      min="1"
-                      max="5"
-                    />
-                  </div>
+                  {formData.resident_type === 'student' && (
+                    <>
+                      <div>
+                        <label className="block text-sm sm:text-base font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">
+                          Course
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.course}
+                          onChange={(e) => setFormData({ ...formData, course: e.target.value })}
+                          className="input-field min-h-[48px] sm:min-h-[44px] text-base sm:text-sm"
+                          placeholder="e.g., Computer Science"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm sm:text-base font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">
+                          Year of Study
+                        </label>
+                        <input
+                          type="number"
+                          value={formData.year_of_study}
+                          onChange={(e) => setFormData({ ...formData, year_of_study: e.target.value })}
+                          className="input-field min-h-[48px] sm:min-h-[44px] text-base sm:text-sm"
+                          min="1"
+                          max="5"
+                          placeholder="1-5"
+                        />
+                      </div>
+                    </>
+                  )}
                   <div>
                     <label className="block text-sm sm:text-base font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">
                       Status
@@ -583,7 +649,7 @@ const Students = () => {
                     type="submit" 
                     className="btn-primary flex-1 min-h-[48px] sm:min-h-[44px] text-base sm:text-base font-semibold shadow-lg active:scale-95 transition-transform"
                   >
-                    {editingStudent ? 'Update' : 'Create'} Student
+                    {editingStudent ? 'Update' : 'Create'} Resident
                   </button>
                   <button
                     type="button"
