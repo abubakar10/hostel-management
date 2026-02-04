@@ -5,7 +5,7 @@ import { setHostelContext } from '../middleware/hostel.js';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
-import { uploadToSupabase, deleteFromSupabase, getSupabaseFileUrl, supabaseClient } from '../config/storage.js';
+import { uploadToSupabase, deleteFromSupabase, getSupabaseFileUrl, downloadFromSupabase, supabaseClient } from '../config/storage.js';
 
 const router = express.Router();
 
@@ -223,12 +223,19 @@ router.get('/:id/download', authenticateToken, async (req, res) => {
     // Files stored in Supabase will have path starting with "documents/"
     // or we're using Supabase Storage in production
     if (filePath && (filePath.startsWith('documents/') || useSupabaseStorage)) {
-      // Get public URL from Supabase
-      const fileUrl = getSupabaseFileUrl(filePath);
-      if (fileUrl) {
-        // Redirect to Supabase public URL
-        return res.redirect(fileUrl);
-      } else {
+      try {
+        // Download file from Supabase Storage
+        const fileBuffer = await downloadFromSupabase(filePath);
+        
+        // Set appropriate headers
+        res.setHeader('Content-Type', document.mime_type || 'application/octet-stream');
+        res.setHeader('Content-Disposition', `attachment; filename="${document.file_name}"`);
+        res.setHeader('Content-Length', fileBuffer.length);
+        
+        // Send the file buffer
+        res.send(fileBuffer);
+      } catch (error) {
+        console.error('Error downloading from Supabase:', error);
         return res.status(404).json({ error: 'File not found in storage' });
       }
     } else {

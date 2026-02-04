@@ -35,6 +35,16 @@ const RoomTransfers = () => {
     fetchRooms()
   }, [statusFilter])
 
+  // Auto-refresh pending requests every 30 seconds
+  useEffect(() => {
+    if (statusFilter === 'all' || statusFilter === 'pending') {
+      const interval = setInterval(() => {
+        fetchTransfers()
+      }, 30000)
+      return () => clearInterval(interval)
+    }
+  }, [statusFilter])
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -207,17 +217,20 @@ const RoomTransfers = () => {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">Room Transfer Requests</h1>
-          <p className="text-gray-600 dark:text-gray-400">Manage student room transfer requests</p>
+          <p className="text-gray-600 dark:text-gray-400">
+            Review and manage student room transfer requests • Students can submit requests from their portal
+          </p>
         </div>
         <button
           onClick={() => {
             resetForm()
             setShowModal(true)
           }}
-          className="btn-primary flex items-center gap-2"
+          className="btn-secondary flex items-center gap-2"
+          title="Create transfer request on behalf of a student"
         >
           <Plus size={20} />
-          New Transfer Request
+          Create Request (Admin)
         </button>
       </div>
 
@@ -298,7 +311,7 @@ const RoomTransfers = () => {
                             <button
                               onClick={() => handleApprove(transfer.id)}
                               className="p-2 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 rounded transition-colors"
-                              title="Approve"
+                              title="Approve - Will automatically transfer student to new room"
                             >
                               <CheckCircle size={18} />
                             </button>
@@ -311,9 +324,14 @@ const RoomTransfers = () => {
                             </button>
                           </>
                         )}
+                        {transfer.status === 'approved' && transfer.approved_by_name && (
+                          <span className="text-xs text-gray-500 dark:text-gray-400 px-2">
+                            Approved by {transfer.approved_by_name}
+                          </span>
+                        )}
                         <button
                           onClick={() => handleDelete(transfer.id)}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors"
+                          className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
                           title="Delete"
                         >
                           <X size={18} />
@@ -355,7 +373,12 @@ const RoomTransfers = () => {
               className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto modal-content"
             >
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">New Room Transfer Request</h2>
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Create Transfer Request</h2>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                    Creating on behalf of a student
+                  </p>
+                </div>
                 <button
                   onClick={() => {
                     setShowModal(false)
@@ -395,7 +418,7 @@ const RoomTransfers = () => {
                             setFormData({ ...formData, student_id: '', from_room_id: '' })
                             setStudentSearchTerm('')
                           }}
-                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
                         >
                           <X size={18} />
                         </button>
@@ -403,7 +426,7 @@ const RoomTransfers = () => {
                     </div>
                     
                     {showStudentDropdown && studentSearchTerm && (
-                      <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                      <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                         {filteredStudents.length > 0 ? (
                           <>
                             {filteredStudents.slice(0, 50).map(student => (
@@ -423,19 +446,19 @@ const RoomTransfers = () => {
                                 <div className="font-medium text-gray-900 dark:text-gray-100">
                                   {student.first_name} {student.last_name}
                                 </div>
-                                <div className="text-sm text-gray-500">
+                                <div className="text-sm text-gray-500 dark:text-gray-400">
                                   ID: {student.student_id} {student.email && `• ${student.email}`}
                                 </div>
                               </div>
                             ))}
                             {filteredStudents.length > 50 && (
-                              <div className="px-4 py-2 text-xs text-gray-500 bg-gray-50 border-t border-gray-200">
+                              <div className="px-4 py-2 text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600">
                                 Showing first 50 of {filteredStudents.length} results. Refine your search for more specific results.
                               </div>
                             )}
                           </>
                         ) : (
-                          <div className="px-4 py-3 text-gray-500 text-sm">
+                          <div className="px-4 py-3 text-gray-500 dark:text-gray-400 text-sm">
                             No students found matching "{studentSearchTerm}"
                           </div>
                         )}
@@ -443,8 +466,8 @@ const RoomTransfers = () => {
                     )}
                     
                     {selectedStudent && !showStudentDropdown && (
-                      <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-sm">
-                        <span className="font-medium text-blue-900">
+                      <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded text-sm">
+                        <span className="font-medium text-blue-900 dark:text-blue-300">
                           Selected: {selectedStudent.first_name} {selectedStudent.last_name} ({selectedStudent.student_id})
                         </span>
                       </div>

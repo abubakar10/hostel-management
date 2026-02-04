@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import api from '../config/api'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Edit, Trash2, Search, X } from 'lucide-react'
+import { Plus, Edit, Trash2, Search, X, FileText, Upload, Download, Paperclip } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useNotification } from '../context/NotificationContext'
 
@@ -14,6 +14,8 @@ const Students = () => {
   const [showModal, setShowModal] = useState(false)
   const [editingStudent, setEditingStudent] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
+  const [studentDocuments, setStudentDocuments] = useState([])
+  const [uploadingDocs, setUploadingDocs] = useState(false)
   const [formData, setFormData] = useState({
     student_id: '',
     first_name: '',
@@ -30,6 +32,7 @@ const Students = () => {
     status: 'active',
     hostel_id: ''
   })
+  const [documentsToUpload, setDocumentsToUpload] = useState([]) // Array of {file, document_type}
 
   useEffect(() => {
     fetchStudents()
@@ -40,8 +43,20 @@ const Students = () => {
 
   const fetchStudents = async () => {
     try {
-      const response = await api.get('/api/students')
-      setStudents(response.data)
+      const [studentsRes, documentsRes] = await Promise.all([
+        api.get('/api/students'),
+        api.get('/api/documents').catch(() => ({ data: [] })) // Fetch documents, ignore errors
+      ])
+      const studentsData = studentsRes.data
+      const documentsData = documentsRes.data || []
+      
+      // Add document count to each student
+      const studentsWithDocCount = studentsData.map(student => ({
+        ...student,
+        documentCount: documentsData.filter(doc => doc.student_id === student.id).length
+      }))
+      
+      setStudents(studentsWithDocCount)
     } catch (error) {
       console.error('Error fetching students:', error)
     } finally {
@@ -92,13 +107,40 @@ const Students = () => {
         year_of_study: formData.year_of_study || null,
       }
 
+      let studentId
       if (editingStudent) {
         await api.put(`/api/students/${editingStudent.id}`, submitData)
+        studentId = editingStudent.id
         showSuccess('Student updated successfully!')
       } else {
-        await api.post('/api/students', submitData)
+        const response = await api.post('/api/students', submitData)
+        studentId = response.data.id
         showSuccess('Student created successfully!')
       }
+
+      // Upload documents if any
+      if (documentsToUpload.length > 0 && studentId) {
+        setUploadingDocs(true)
+        try {
+          for (const doc of documentsToUpload) {
+            const uploadData = new FormData()
+            uploadData.append('file', doc.file)
+            uploadData.append('student_id', studentId)
+            uploadData.append('document_type', doc.document_type)
+            await api.post('/api/documents', uploadData, {
+              headers: { 'Content-Type': 'multipart/form-data' },
+              timeout: 60000
+            })
+          }
+          showSuccess(`${documentsToUpload.length} document(s) uploaded successfully!`)
+        } catch (error) {
+          console.error('Error uploading documents:', error)
+          showError('Student saved but some documents failed to upload. You can add them later.')
+        } finally {
+          setUploadingDocs(false)
+        }
+      }
+
       fetchStudents()
       setShowModal(false)
       resetForm()
@@ -135,7 +177,7 @@ const Students = () => {
     }
   }
 
-  const handleEdit = (student) => {
+  const handleEdit = async (student) => {
     setEditingStudent(student)
     setFormData({
       student_id: student.student_id,
@@ -153,6 +195,15 @@ const Students = () => {
       status: student.status || 'active',
       hostel_id: student.hostel_id || ''
     })
+    // Fetch student documents
+    try {
+      const response = await api.get('/api/documents', { params: { student_id: student.id } })
+      setStudentDocuments(response.data)
+    } catch (error) {
+      console.error('Error fetching student documents:', error)
+      setStudentDocuments([])
+    }
+    setDocumentsToUpload([])
     setShowModal(true)
   }
 
@@ -174,6 +225,73 @@ const Students = () => {
       hostel_id: ''
     })
     setEditingStudent(null)
+    setStudentDocuments([])
+    setDocumentsToUpload([])
+  }
+
+  const handleAddDocument = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Validate file size (10MB)
+    const maxSize = 10 * 1024 * 1024
+    if (file.size > maxSize) {
+      showError(`File size exceeds 10MB. Your file is ${(file.size / (1024 * 1024)).toFixed(2)}MB`)
+      return
+    }
+
+    // Validate file type
+    const allowedExtensions = ['.pdf', '.doc', '.docx', '.jpg', '.jpeg', '.png']
+    const fileExtension = '.' + file.name.split('.').pop().toLowerCase()
+    if (!allowedExtensions.includes(fileExtension)) {
+      showError('Invalid file type. Only PDF, DOC, DOCX, JPG, and PNG files are allowed.')
+      return
+    }
+
+    setDocumentsToUpload([...documentsToUpload, { file, document_type: 'id_card' }])
+    e.target.value = '' // Reset input
+  }
+
+  const handleRemoveDocument = (index) => {
+    setDocumentsToUpload(documentsToUpload.filter((_, i) => i !== index))
+  }
+
+  const handleDeleteDocument = async (docId) => {
+    if (window.confirm('Are you sure you want to delete this document?')) {
+      try {
+        await api.delete(`/api/documents/${docId}`)
+        setStudentDocuments(studentDocuments.filter(doc => doc.id !== docId))
+        showSuccess('Document deleted successfully')
+      } catch (error) {
+        showError(error.response?.data?.error || 'Error deleting document')
+      }
+    }
+  }
+
+  const handleDownloadDocument = async (docId, fileName) => {
+    try {
+      const response = await api.get(`/api/documents/${docId}/download`, {
+        responseType: 'blob'
+      })
+      const url = window.URL.createObjectURL(new Blob([response.data]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', fileName)
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      showSuccess('Document downloaded successfully')
+    } catch (error) {
+      showError('Error downloading document')
+    }
+  }
+
+  const getFileSize = (bytes) => {
+    if (!bytes) return '0 B'
+    const k = 1024
+    const sizes = ['B', 'KB', 'MB', 'GB']
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i]
   }
 
   const filteredStudents = students.filter(student =>
@@ -279,13 +397,21 @@ const Students = () => {
                         <td className="table-cell">{student.course || 'N/A'}</td>
                         <td className="table-cell">{student.room_number || 'N/A'}</td>
                         <td className="table-cell">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            student.status === 'active' 
-                              ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' 
-                              : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'
-                          }`}>
-                            {student.status}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              student.status === 'active' 
+                                ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' 
+                                : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'
+                            }`}>
+                              {student.status}
+                            </span>
+                            {student.documentCount > 0 && (
+                              <span className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400" title={`${student.documentCount} document(s)`}>
+                                <FileText size={14} />
+                                <span>{student.documentCount}</span>
+                              </span>
+                            )}
+                          </div>
                         </td>
                         <td className="table-cell">
                           <div className="flex gap-2">
@@ -387,6 +513,17 @@ const Students = () => {
                           {student.room_number || 'N/A'}
                         </span>
                       </div>
+                      {student.documentCount > 0 && (
+                        <div className="flex items-center gap-2 sm:gap-3">
+                          <span className="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400 min-w-[80px] sm:min-w-[90px]">
+                            Documents:
+                          </span>
+                          <span className="flex items-center gap-1 text-xs sm:text-sm text-gray-700 dark:text-gray-300">
+                            <FileText size={14} />
+                            <span>{student.documentCount} file(s)</span>
+                          </span>
+                        </div>
+                      )}
                     </div>
 
                     {/* Action Buttons */}
@@ -644,12 +781,135 @@ const Students = () => {
                     rows="3"
                   />
                 </div>
+
+                {/* Documents Section */}
+                <div className="sm:col-span-2 pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <div className="flex items-center justify-between mb-3">
+                    <label className="block text-sm sm:text-base font-medium text-gray-700 dark:text-gray-300">
+                      Documents
+                    </label>
+                    <label className="btn-secondary text-xs sm:text-sm py-1.5 px-3 cursor-pointer">
+                      <Upload size={14} className="inline mr-1" />
+                      Add Document
+                      <input
+                        type="file"
+                        className="hidden"
+                        onChange={handleAddDocument}
+                        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                      />
+                    </label>
+                  </div>
+
+                  {/* Existing Documents (when editing) */}
+                  {editingStudent && studentDocuments.length > 0 && (
+                    <div className="mb-4 space-y-2">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Existing Documents:</p>
+                      {studentDocuments.map((doc) => (
+                        <div key={doc.id} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <FileText size={16} className="text-gray-500 dark:text-gray-400 flex-shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">
+                                {doc.file_name}
+                              </p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">
+                                {doc.document_type?.replace('_', ' ')} • {getFileSize(doc.file_size)}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex gap-1">
+                            <button
+                              type="button"
+                              onClick={() => handleDownloadDocument(doc.id, doc.file_name)}
+                              className="p-1.5 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 rounded transition-colors"
+                              title="Download"
+                            >
+                              <Download size={16} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteDocument(doc.id)}
+                              className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+                              title="Delete"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* New Documents to Upload */}
+                  {documentsToUpload.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                        {editingStudent ? 'New Documents to Upload:' : 'Documents to Upload:'}
+                      </p>
+                      {documentsToUpload.map((doc, index) => (
+                        <div key={index} className="flex items-center justify-between p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <Paperclip size={16} className="text-blue-500 dark:text-blue-400 flex-shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">
+                                {doc.file.name}
+                              </p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <select
+                                  value={doc.document_type}
+                                  onChange={(e) => {
+                                    const updated = [...documentsToUpload]
+                                    updated[index].document_type = e.target.value
+                                    setDocumentsToUpload(updated)
+                                  }}
+                                  className="text-xs px-2 py-0.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded"
+                                >
+                                  <option value="id_card">ID Card</option>
+                                  <option value="admission_form">Admission Form</option>
+                                  <option value="contract">Contract</option>
+                                  <option value="photo">Photo</option>
+                                  <option value="other">Other</option>
+                                </select>
+                                <span className="text-xs text-gray-500 dark:text-gray-400">
+                                  {(doc.file.size / (1024 * 1024)).toFixed(2)} MB
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveDocument(index)}
+                            className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors ml-2"
+                            title="Remove"
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {(!editingStudent || studentDocuments.length === 0) && documentsToUpload.length === 0 && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400 italic">
+                      No documents added. Click "Add Document" to upload files.
+                    </p>
+                  )}
+                </div>
+
                 <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-4 sm:pt-6 border-t border-gray-200 dark:border-gray-700">
                   <button 
                     type="submit" 
                     className="btn-primary flex-1 min-h-[48px] sm:min-h-[44px] text-base sm:text-base font-semibold shadow-lg active:scale-95 transition-transform"
+                    disabled={uploadingDocs}
                   >
-                    {editingStudent ? 'Update' : 'Create'} Resident
+                    {uploadingDocs ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        Uploading...
+                      </span>
+                    ) : (
+                      `${editingStudent ? 'Update' : 'Create'} Resident${documentsToUpload.length > 0 ? ' & Documents' : ''}`
+                    )}
                   </button>
                   <button
                     type="button"

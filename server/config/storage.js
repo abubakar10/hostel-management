@@ -107,3 +107,30 @@ export const getSupabaseFileUrl = (filePath) => {
   return data.publicUrl;
 };
 
+// Helper function to download file from Supabase Storage as buffer
+export const downloadFromSupabase = async (filePath) => {
+  if (!supabaseClient) {
+    throw new Error('Supabase Storage is not configured');
+  }
+
+  // The filePath should be in format "documents/filename.pdf"
+  // Remove "documents/" prefix if present to get the relative path
+  let relativePath = filePath;
+  if (filePath.startsWith('documents/')) {
+    relativePath = filePath.substring('documents/'.length);
+  }
+
+  const { data, error } = await supabaseClient.storage
+    .from('documents')
+    .download(relativePath);
+
+  if (error) {
+    console.error('Supabase download error:', error);
+    throw new Error(`Failed to download file from Supabase: ${error.message}`);
+  }
+
+  // Convert Blob to Buffer
+  const arrayBuffer = await data.arrayBuffer();
+  return Buffer.from(arrayBuffer);
+};
+
