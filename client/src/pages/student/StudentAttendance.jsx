@@ -1,13 +1,16 @@
 import { useState, useEffect } from 'react'
 import api from '../../config/api'
 import { motion } from 'framer-motion'
-import { ClipboardCheck, Calendar, TrendingUp } from 'lucide-react'
+import { ClipboardCheck, Calendar, TrendingUp, ChevronRight } from 'lucide-react'
 import { useNotification } from '../../context/NotificationContext'
+import MobileDetailModal from '../../components/MobileDetailModal'
 
 const StudentAttendance = () => {
   const { showError } = useNotification()
   const [attendance, setAttendance] = useState([])
   const [loading, setLoading] = useState(true)
+  const [showDetailModal, setShowDetailModal] = useState(false)
+  const [selectedRecord, setSelectedRecord] = useState(null)
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
 
@@ -111,7 +114,7 @@ const StudentAttendance = () => {
         </div>
 
         {/* Attendance List */}
-        <div className="table-container -mx-3 sm:mx-0">
+        <div className="hidden lg:block table-container -mx-3 sm:mx-0">
           <table className="table">
             <thead className="table-header">
               <tr>
@@ -152,7 +155,43 @@ const StudentAttendance = () => {
             </div>
           )}
         </div>
+
+        {/* Mobile Card View */}
+        <div className="lg:hidden space-y-3">
+          {attendance.map((record, index) => (
+            <motion.div
+              key={record.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.03 }}
+              onClick={() => { setSelectedRecord(record); setShowDetailModal(true) }}
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 border border-gray-200 dark:border-gray-700 cursor-pointer active:scale-[0.99] flex items-center justify-between gap-3"
+            >
+              <div className="flex-1 min-w-0">
+                <h3 className="font-bold text-gray-800 dark:text-gray-100">{new Date(record.date).toLocaleDateString()}</h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">{record.remarks || 'No remarks'}</p>
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${record.status === 'present' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' : record.status === 'late' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300' : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'}`}>{record.status}</span>
+                <ChevronRight size={20} className="text-gray-400" />
+              </div>
+            </motion.div>
+          ))}
+          {attendance.length === 0 && (
+            <div className="text-center py-8 text-gray-500 dark:text-gray-400">No attendance records found</div>
+          )}
+        </div>
       </div>
+
+      <MobileDetailModal isOpen={showDetailModal && !!selectedRecord} onClose={() => { setShowDetailModal(false); setSelectedRecord(null) }} title={selectedRecord ? new Date(selectedRecord.date).toLocaleDateString() : 'Attendance Details'}>
+        {selectedRecord && (
+          <div className="grid gap-3">
+            <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span className="text-sm text-gray-500 dark:text-gray-400">Date</span><span className="text-sm font-medium">{new Date(selectedRecord.date).toLocaleDateString()}</span></div>
+            <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span className="text-sm text-gray-500 dark:text-gray-400">Status</span><span className={`px-2 py-1 rounded-full text-xs font-medium ${selectedRecord.status === 'present' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' : selectedRecord.status === 'late' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300' : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'}`}>{selectedRecord.status}</span></div>
+            <div className="flex justify-between py-2"><span className="text-sm text-gray-500 dark:text-gray-400">Remarks</span><span className="text-sm font-medium">{selectedRecord.remarks || '-'}</span></div>
+          </div>
+        )}
+      </MobileDetailModal>
     </div>
   )
 }

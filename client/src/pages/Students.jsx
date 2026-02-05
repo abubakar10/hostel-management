@@ -1,17 +1,30 @@
 import { useState, useEffect } from 'react'
 import api from '../config/api'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Edit, Trash2, Search, X } from 'lucide-react'
+import { Plus, Edit, Trash2, Search, X, ChevronRight, User } from 'lucide-react'
+import { compressImageToBase64 } from '../utils/imageUtils'
 import { useAuth } from '../context/AuthContext'
+import { useHostel } from '../context/HostelContext'
 import { useNotification } from '../context/NotificationContext'
+import MobileDetailModal from '../components/MobileDetailModal'
+
+const DetailRow = ({ label, value }) => (
+  <div className="flex justify-between items-start gap-2 py-2 border-b border-gray-100 dark:border-gray-700 last:border-0">
+    <span className="text-sm font-medium text-gray-500 dark:text-gray-400 shrink-0">{label}</span>
+    <span className="text-sm text-gray-800 dark:text-gray-200 text-right break-words">{value}</span>
+  </div>
+)
 
 const Students = () => {
   const { user } = useAuth()
+  const { selectedHostelId } = useHostel()
   const { showError, showSuccess } = useNotification()
   const [students, setStudents] = useState([])
   const [hostels, setHostels] = useState([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
+  const [showDetailModal, setShowDetailModal] = useState(false)
+  const [selectedStudent, setSelectedStudent] = useState(null)
   const [editingStudent, setEditingStudent] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [formData, setFormData] = useState({
@@ -28,7 +41,8 @@ const Students = () => {
     year_of_study: '',
     room_id: null,
     status: 'active',
-    hostel_id: ''
+    hostel_id: '',
+    photo: ''
   })
 
   useEffect(() => {
@@ -36,7 +50,7 @@ const Students = () => {
     if (user?.role === 'super_admin') {
       fetchHostels()
     }
-  }, [user])
+  }, [user, selectedHostelId])
 
   const fetchStudents = async () => {
     try {
@@ -84,6 +98,7 @@ const Students = () => {
         ...formData,
         date_of_birth: normalizedDateOfBirth,
         hostel_id: finalHostelId,
+        photo: formData.photo || null,
         // Normalize other optional fields
         phone: formData.phone?.trim() || null,
         address: formData.address?.trim() || null,
@@ -135,6 +150,21 @@ const Students = () => {
     }
   }
 
+  const handlePhotoChange = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!file.type.startsWith('image/')) {
+      showError('Please select an image file (JPG, PNG, etc.)')
+      return
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      showError('Image must be under 5MB')
+      return
+    }
+    const base64 = await compressImageToBase64(file)
+    if (base64) setFormData(prev => ({ ...prev, photo: base64 }))
+  }
+
   const handleEdit = (student) => {
     setEditingStudent(student)
     setFormData({
@@ -151,7 +181,8 @@ const Students = () => {
       year_of_study: student.year_of_study || '',
       room_id: student.room_id || null,
       status: student.status || 'active',
-      hostel_id: student.hostel_id || ''
+      hostel_id: student.hostel_id || '',
+      photo: student.photo || ''
     })
     setShowModal(true)
   }
@@ -171,7 +202,8 @@ const Students = () => {
       year_of_study: '',
       room_id: null,
       status: 'active',
-      hostel_id: ''
+      hostel_id: user?.role === 'super_admin' && selectedHostelId ? selectedHostelId : '',
+      photo: ''
     })
     setEditingStudent(null)
   }
@@ -239,6 +271,7 @@ const Students = () => {
               <table className="table">
                 <thead className="table-header">
                   <tr>
+                    <th className="table-header-cell w-14">Photo</th>
                     <th className="table-header-cell">ID</th>
                     <th className="table-header-cell">Name</th>
                     <th className="table-header-cell">Type</th>
@@ -260,6 +293,15 @@ const Students = () => {
                         transition={{ delay: index * 0.05 }}
                         className="hover:bg-gray-50 dark:hover:bg-gray-700/50"
                       >
+                        <td className="table-cell">
+                          {student.photo ? (
+                            <img src={student.photo} alt="" className="w-10 h-10 rounded-full object-cover" />
+                          ) : (
+                            <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center">
+                              <User size={20} className="text-gray-500 dark:text-gray-400" />
+                            </div>
+                          )}
+                        </td>
                         <td className="table-cell font-medium">{student.student_id}</td>
                         <td className="table-cell">{student.first_name} {student.last_name}</td>
                         <td className="table-cell">
@@ -312,7 +354,7 @@ const Students = () => {
               </table>
             </div>
 
-            {/* Mobile/Tablet Card View */}
+            {/* Mobile/Tablet Card View - Compact cards, tap to see full details */}
             <div className="lg:hidden space-y-3 sm:space-y-4">
               <AnimatePresence>
                 {filteredStudents.map((student, index) => (
@@ -322,89 +364,38 @@ const Students = () => {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -20 }}
                     transition={{ delay: index * 0.03 }}
-                    className="bg-white dark:bg-gray-800 rounded-xl shadow-md dark:shadow-gray-900/50 p-4 sm:p-5 border border-gray-200 dark:border-gray-700 hover:shadow-lg dark:hover:shadow-gray-900/70 transition-all duration-200"
+                    onClick={() => {
+                      setSelectedStudent(student)
+                      setShowDetailModal(true)
+                    }}
+                    className="bg-white dark:bg-gray-800 rounded-xl shadow-md dark:shadow-gray-900/50 p-4 border border-gray-200 dark:border-gray-700 hover:shadow-lg dark:hover:shadow-gray-900/70 transition-all duration-200 cursor-pointer active:scale-[0.99] flex items-center justify-between gap-3"
                   >
-                    {/* Card Header */}
-                    <div className="flex items-start justify-between mb-3 sm:mb-4">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      {student.photo ? (
+                        <img src={student.photo} alt="" className="w-12 h-12 rounded-full object-cover flex-shrink-0" />
+                      ) : (
+                        <div className="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center flex-shrink-0">
+                          <User size={24} className="text-gray-500 dark:text-gray-400" />
+                        </div>
+                      )}
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-100 truncate">
-                          {student.first_name} {student.last_name}
-                        </h3>
-                        <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-                          ID: {student.student_id}
-                        </p>
-                      </div>
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-medium flex-shrink-0 ml-2 ${
+                      <h3 className="text-base font-bold text-gray-800 dark:text-gray-100 truncate">
+                        {student.first_name} {student.last_name}
+                      </h3>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                        ID: {student.student_id} • {student.room_number || 'No room'}
+                      </p>
+                    </div>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                         student.status === 'active' 
                           ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' 
                           : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'
                       }`}>
                         {student.status}
                       </span>
-                    </div>
-
-                    {/* Card Details */}
-                    <div className="space-y-2 sm:space-y-2.5 mb-4 sm:mb-5">
-                      <div className="flex items-center gap-2 sm:gap-3">
-                        <span className="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400 min-w-[80px] sm:min-w-[90px]">
-                          Type:
-                        </span>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          student.resident_type === 'student' 
-                            ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300' 
-                            : student.resident_type === 'job_based'
-                            ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300'
-                            : 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300'
-                        }`}>
-                          {student.resident_type === 'student' ? 'Student' : 
-                           student.resident_type === 'job_based' ? 'Job-based' : 
-                           'Short-term'}
-                        </span>
-                      </div>
-                      <div className="flex items-start gap-2 sm:gap-3">
-                        <span className="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400 min-w-[80px] sm:min-w-[90px]">
-                          Email:
-                        </span>
-                        <span className="text-xs sm:text-sm text-gray-700 dark:text-gray-300 break-all flex-1">
-                          {student.email}
-                        </span>
-                      </div>
-                      {student.resident_type === 'student' && (
-                        <div className="flex items-center gap-2 sm:gap-3">
-                          <span className="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400 min-w-[80px] sm:min-w-[90px]">
-                            Course:
-                          </span>
-                          <span className="text-xs sm:text-sm text-gray-700 dark:text-gray-300">
-                            {student.course || 'N/A'}
-                          </span>
-                        </div>
-                      )}
-                      <div className="flex items-center gap-2 sm:gap-3">
-                        <span className="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400 min-w-[80px] sm:min-w-[90px]">
-                          Room:
-                        </span>
-                        <span className="text-xs sm:text-sm text-gray-700 dark:text-gray-300 font-medium">
-                          {student.room_number || 'N/A'}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Action Buttons */}
-                    <div className="flex gap-2 sm:gap-3 pt-3 sm:pt-4 border-t border-gray-200 dark:border-gray-700">
-                      <button
-                        onClick={() => handleEdit(student)}
-                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 sm:py-3 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg font-medium text-sm sm:text-base hover:bg-blue-100 dark:hover:bg-blue-900/30 active:scale-95 transition-all min-h-[44px] sm:min-h-[48px]"
-                      >
-                        <Edit size={18} className="sm:w-5 sm:h-5" />
-                        <span>Edit</span>
-                      </button>
-                      <button
-                        onClick={() => handleDelete(student.id)}
-                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 sm:py-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg font-medium text-sm sm:text-base hover:bg-red-100 dark:hover:bg-red-900/30 active:scale-95 transition-all min-h-[44px] sm:min-h-[48px]"
-                      >
-                        <Trash2 size={18} className="sm:w-5 sm:h-5" />
-                        <span>Delete</span>
-                      </button>
+                      <ChevronRight size={20} className="text-gray-400" />
                     </div>
                   </motion.div>
                 ))}
@@ -413,6 +404,76 @@ const Students = () => {
           </>
         )}
       </div>
+
+      {/* Mobile Detail Modal - Full details when card is clicked */}
+      <MobileDetailModal
+        isOpen={showDetailModal && !!selectedStudent}
+        onClose={() => {
+          setShowDetailModal(false)
+          setSelectedStudent(null)
+        }}
+        title={selectedStudent ? `${selectedStudent.first_name} ${selectedStudent.last_name}` : 'Student Details'}
+      >
+        {selectedStudent && (
+          <div className="space-y-4">
+            <div className="flex justify-center mb-4">
+              {selectedStudent.photo ? (
+                <img src={selectedStudent.photo} alt="" className="w-24 h-24 rounded-full object-cover border-2 border-gray-200 dark:border-gray-600" />
+              ) : (
+                <div className="w-24 h-24 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center">
+                  <User size={48} className="text-gray-500 dark:text-gray-400" />
+                </div>
+              )}
+            </div>
+            <div className="grid gap-3">
+              <DetailRow label="Student ID" value={selectedStudent.student_id} />
+              <DetailRow label="Type" value={
+                selectedStudent.resident_type === 'student' ? 'Student' : 
+                selectedStudent.resident_type === 'job_based' ? 'Job-based' : 'Short-term'
+              } />
+              <DetailRow label="Email" value={selectedStudent.email} />
+              <DetailRow label="Phone" value={selectedStudent.phone || 'N/A'} />
+              <DetailRow label="Course" value={selectedStudent.course || 'N/A'} />
+              <DetailRow label="Year of Study" value={selectedStudent.year_of_study || 'N/A'} />
+              <DetailRow label="Room" value={selectedStudent.room_number || 'N/A'} />
+              <DetailRow label="Address" value={selectedStudent.address || 'N/A'} />
+              <DetailRow label="Date of Birth" value={selectedStudent.date_of_birth ? new Date(selectedStudent.date_of_birth).toLocaleDateString() : 'N/A'} />
+              <DetailRow label="Gender" value={selectedStudent.gender || 'N/A'} />
+              <DetailRow label="Status" value={
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                  selectedStudent.status === 'active' 
+                    ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' 
+                    : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'
+                }`}>
+                  {selectedStudent.status}
+                </span>
+              } />
+            </div>
+            <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+              <button
+                onClick={() => {
+                  setShowDetailModal(false)
+                  handleEdit(selectedStudent)
+                }}
+                className="flex-1 flex items-center justify-center gap-2 py-3 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg font-medium hover:bg-blue-100 dark:hover:bg-blue-900/30 min-h-[48px]"
+              >
+                <Edit size={18} />
+                <span>Edit</span>
+              </button>
+              <button
+                onClick={() => {
+                  setShowDetailModal(false)
+                  handleDelete(selectedStudent.id)
+                }}
+                className="flex-1 flex items-center justify-center gap-2 py-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg font-medium hover:bg-red-100 dark:hover:bg-red-900/30 min-h-[48px]"
+              >
+                <Trash2 size={18} />
+                <span>Delete</span>
+              </button>
+            </div>
+          </div>
+        )}
+      </MobileDetailModal>
 
       <AnimatePresence>
         {showModal && (
@@ -632,6 +693,37 @@ const Students = () => {
                       )}
                     </div>
                   )}
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="block text-sm sm:text-base font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">
+                    Photo <span className="text-gray-400 font-normal">(optional)</span>
+                  </label>
+                  <div className="flex items-center gap-4">
+                    {formData.photo ? (
+                      <div className="flex items-center gap-3">
+                        <img src={formData.photo} alt="Preview" className="w-16 h-16 rounded-full object-cover border-2 border-gray-200 dark:border-gray-600" />
+                        <button
+                          type="button"
+                          onClick={() => setFormData(prev => ({ ...prev, photo: '' }))}
+                          className="text-sm text-red-600 dark:text-red-400 hover:underline"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ) : (
+                      <label className="cursor-pointer">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handlePhotoChange}
+                          className="hidden"
+                        />
+                        <span className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 text-sm">
+                          Choose image
+                        </span>
+                      </label>
+                    )}
+                  </div>
                 </div>
                 <div className="sm:col-span-2">
                   <label className="block text-sm sm:text-base font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">

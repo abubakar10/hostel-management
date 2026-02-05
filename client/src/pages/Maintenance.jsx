@@ -1,19 +1,24 @@
 import { useState, useEffect } from 'react'
 import api from '../config/api'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Edit, Wrench, Search, Filter, X, CheckCircle, Clock, AlertCircle } from 'lucide-react'
+import { Plus, Edit, Trash2, Wrench, Search, Filter, X, CheckCircle, Clock, AlertCircle, ChevronRight } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useNotification } from '../context/NotificationContext'
+import { useHostel } from '../context/HostelContext'
+import MobileDetailModal from '../components/MobileDetailModal'
 
 const Maintenance = () => {
   const { user } = useAuth()
   const { showError, showSuccess, showConfirm } = useNotification()
+  const { selectedHostelId } = useHostel()
   const [maintenance, setMaintenance] = useState([])
   const [students, setStudents] = useState([])
   const [staff, setStaff] = useState([])
   const [rooms, setRooms] = useState([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
+  const [showDetailModal, setShowDetailModal] = useState(false)
+  const [selectedItem, setSelectedItem] = useState(null)
   const [editingItem, setEditingItem] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
@@ -37,7 +42,7 @@ const Maintenance = () => {
     fetchStudents()
     fetchStaff()
     fetchRooms()
-  }, [statusFilter, priorityFilter])
+  }, [statusFilter, priorityFilter, selectedHostelId])
 
   const fetchMaintenance = async () => {
     try {
@@ -289,7 +294,7 @@ const Maintenance = () => {
           </div>
         </div>
 
-        <div className="table-container">
+        <div className="hidden lg:block table-container">
           <table className="table">
             <thead className="table-header">
               <tr>
@@ -373,7 +378,56 @@ const Maintenance = () => {
             </div>
           )}
         </div>
+
+        {/* Mobile Card View */}
+        <div className="lg:hidden space-y-3">
+          {filteredMaintenance.map((item, index) => (
+            <motion.div
+              key={item.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.03 }}
+              onClick={() => { setSelectedItem(item); setShowDetailModal(true) }}
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 border border-gray-200 dark:border-gray-700 cursor-pointer active:scale-[0.99] flex items-center justify-between gap-3"
+            >
+              <div className="flex-1 min-w-0">
+                <h3 className="font-bold text-gray-800 dark:text-gray-100 truncate">{item.title}</h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                  Room {item.room_number || 'N/A'} • {item.student_first_name && item.student_last_name ? `${item.student_first_name} ${item.student_last_name}` : 'N/A'}
+                </p>
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(item.status)}`}>{item.status || 'pending'}</span>
+                <ChevronRight size={20} className="text-gray-400" />
+              </div>
+            </motion.div>
+          ))}
+          {filteredMaintenance.length === 0 && (
+            <div className="text-center py-8 text-gray-500">No maintenance requests found</div>
+          )}
+        </div>
       </div>
+
+      <MobileDetailModal isOpen={showDetailModal && !!selectedItem} onClose={() => { setShowDetailModal(false); setSelectedItem(null) }} title={selectedItem?.title || 'Maintenance Details'}>
+        {selectedItem && (
+          <div className="space-y-4">
+            <div className="grid gap-3">
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span className="text-sm text-gray-500 dark:text-gray-400">Title</span><span className="text-sm font-medium">{selectedItem.title}</span></div>
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span className="text-sm text-gray-500 dark:text-gray-400">Description</span><span className="text-sm font-medium">{selectedItem.description || '-'}</span></div>
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span className="text-sm text-gray-500 dark:text-gray-400">Room</span><span className="text-sm font-medium">{selectedItem.room_number || 'N/A'}</span></div>
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span className="text-sm text-gray-500 dark:text-gray-400">Requested By</span><span className="text-sm font-medium">{selectedItem.student_first_name && selectedItem.student_last_name ? `${selectedItem.student_first_name} ${selectedItem.student_last_name}` : 'N/A'}</span></div>
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span className="text-sm text-gray-500 dark:text-gray-400">Priority</span><span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(selectedItem.priority)}`}>{selectedItem.priority || 'medium'}</span></div>
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span className="text-sm text-gray-500 dark:text-gray-400">Status</span><span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(selectedItem.status)}`}>{selectedItem.status || 'pending'}</span></div>
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span className="text-sm text-gray-500 dark:text-gray-400">Assigned To</span><span className="text-sm font-medium">{selectedItem.staff_first_name && selectedItem.staff_last_name ? `${selectedItem.staff_first_name} ${selectedItem.staff_last_name}` : 'Unassigned'}</span></div>
+              <div className="flex justify-between py-2"><span className="text-sm text-gray-500 dark:text-gray-400">Cost</span><span className="text-sm font-medium">{selectedItem.cost ? `RS ${parseFloat(selectedItem.cost).toLocaleString()}` : '-'}</span></div>
+            </div>
+            <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+              <button onClick={() => { setShowDetailModal(false); handleEdit(selectedItem) }} className="flex-1 flex items-center justify-center gap-2 py-3 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg font-medium min-h-[48px]"><Edit size={18} /><span>Update</span></button>
+              <button onClick={() => { setShowDetailModal(false); handleDelete(selectedItem.id) }} className="flex-1 flex items-center justify-center gap-2 py-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg font-medium min-h-[48px]"><Trash2 size={18} /><span>Delete</span></button>
+            </div>
+          </div>
+        )}
+      </MobileDetailModal>
 
       <AnimatePresence>
         {showModal && (

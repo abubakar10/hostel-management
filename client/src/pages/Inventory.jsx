@@ -1,16 +1,21 @@
 import { useState, useEffect } from 'react'
 import api from '../config/api'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Edit, Trash2, Search, Filter, X, Package, AlertTriangle } from 'lucide-react'
+import { Plus, Edit, Trash2, Search, Filter, X, Package, AlertTriangle, ChevronRight } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useNotification } from '../context/NotificationContext'
+import { useHostel } from '../context/HostelContext'
+import MobileDetailModal from '../components/MobileDetailModal'
 
 const Inventory = () => {
   const { user } = useAuth()
   const { showError, showSuccess, showConfirm } = useNotification()
+  const { selectedHostelId } = useHostel()
   const [inventory, setInventory] = useState([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
+  const [showDetailModal, setShowDetailModal] = useState(false)
+  const [selectedItem, setSelectedItem] = useState(null)
   const [editingItem, setEditingItem] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('all')
@@ -28,7 +33,7 @@ const Inventory = () => {
 
   useEffect(() => {
     fetchInventory()
-  }, [categoryFilter])
+  }, [categoryFilter, selectedHostelId])
 
   const fetchInventory = async () => {
     try {
@@ -216,7 +221,7 @@ const Inventory = () => {
           </select>
         </div>
 
-        <div className="table-container">
+        <div className="hidden lg:block table-container">
           <table className="table">
             <thead className="table-header">
               <tr>
@@ -286,7 +291,53 @@ const Inventory = () => {
             </div>
           )}
         </div>
+
+        {/* Mobile Card View */}
+        <div className="lg:hidden space-y-3">
+          {filteredInventory.map((item, index) => (
+            <motion.div
+              key={item.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.03 }}
+              onClick={() => { setSelectedItem(item); setShowDetailModal(true) }}
+              className={`bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 border cursor-pointer active:scale-[0.99] flex items-center justify-between gap-3 ${parseInt(item.quantity) < 10 ? 'border-yellow-300 dark:border-yellow-600' : 'border-gray-200 dark:border-gray-700'}`}
+            >
+              <div className="flex-1 min-w-0 flex items-center gap-2">
+                {parseInt(item.quantity) < 10 && <AlertTriangle size={18} className="text-yellow-600 flex-shrink-0" />}
+                <div>
+                  <h3 className="font-bold text-gray-800 dark:text-gray-100 truncate">{item.item_name}</h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{item.quantity} {item.unit} • {item.category || 'Uncategorized'}</p>
+                </div>
+              </div>
+              <ChevronRight size={20} className="text-gray-400 flex-shrink-0" />
+            </motion.div>
+          ))}
+          {filteredInventory.length === 0 && (
+            <div className="text-center py-8 text-gray-500">No inventory items found</div>
+          )}
+        </div>
       </div>
+
+      <MobileDetailModal isOpen={showDetailModal && !!selectedItem} onClose={() => { setShowDetailModal(false); setSelectedItem(null) }} title={selectedItem?.item_name || 'Item Details'}>
+        {selectedItem && (
+          <div className="space-y-4">
+            <div className="grid gap-3">
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span className="text-sm text-gray-500 dark:text-gray-400">Item Name</span><span className="text-sm font-medium">{selectedItem.item_name}</span></div>
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span className="text-sm text-gray-500 dark:text-gray-400">Category</span><span className="text-sm font-medium">{selectedItem.category || '-'}</span></div>
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span className="text-sm text-gray-500 dark:text-gray-400">Quantity</span><span className="text-sm font-medium">{selectedItem.quantity} {selectedItem.unit}</span></div>
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span className="text-sm text-gray-500 dark:text-gray-400">Location</span><span className="text-sm font-medium">{selectedItem.location || '-'}</span></div>
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span className="text-sm text-gray-500 dark:text-gray-400">Condition</span><span className="text-sm font-medium capitalize">{selectedItem.condition || '-'}</span></div>
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span className="text-sm text-gray-500 dark:text-gray-400">Purchase Price</span><span className="text-sm font-medium">{selectedItem.purchase_price ? `RS ${parseFloat(selectedItem.purchase_price).toLocaleString()}` : '-'}</span></div>
+              <div className="flex justify-between py-2"><span className="text-sm text-gray-500 dark:text-gray-400">Supplier</span><span className="text-sm font-medium">{selectedItem.supplier || '-'}</span></div>
+            </div>
+            <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+              <button onClick={() => { setShowDetailModal(false); handleEdit(selectedItem) }} className="flex-1 flex items-center justify-center gap-2 py-3 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg font-medium min-h-[48px]"><Edit size={18} /><span>Edit</span></button>
+              <button onClick={() => { setShowDetailModal(false); handleDelete(selectedItem.id) }} className="flex-1 flex items-center justify-center gap-2 py-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg font-medium min-h-[48px]"><Trash2 size={18} /><span>Delete</span></button>
+            </div>
+          </div>
+        )}
+      </MobileDetailModal>
 
       <AnimatePresence>
         {showModal && (

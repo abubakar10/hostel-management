@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
+import { HostelProvider } from './context/HostelContext'
 import { NotificationProvider } from './context/NotificationContext'
 import { ThemeProvider } from './context/ThemeContext'
 import PrivateRoute from './components/PrivateRoute'
@@ -40,6 +41,7 @@ function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
+        <HostelProvider>
         <NotificationProvider>
           <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <Routes>
@@ -97,6 +99,7 @@ function App() {
         </Routes>
       </Router>
       </NotificationProvider>
+        </HostelProvider>
     </AuthProvider>
     </ThemeProvider>
   )

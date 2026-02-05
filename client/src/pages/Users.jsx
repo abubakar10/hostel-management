@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
 import api from '../config/api'
 import { motion } from 'framer-motion'
-import { Plus, Edit, Trash2, UserPlus, Shield, Building2, X } from 'lucide-react'
+import { Plus, Edit, Trash2, UserPlus, Shield, Building2, X, ChevronRight } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useNotification } from '../context/NotificationContext'
+import MobileDetailModal from '../components/MobileDetailModal'
 
 const Users = () => {
   const { user } = useAuth()
@@ -12,6 +13,8 @@ const Users = () => {
   const [hostels, setHostels] = useState([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
+  const [showDetailModal, setShowDetailModal] = useState(false)
+  const [selectedUser, setSelectedUser] = useState(null)
   const [editingUser, setEditingUser] = useState(null)
   const [formData, setFormData] = useState({
     username: '',
@@ -145,8 +148,9 @@ const Users = () => {
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
           </div>
         ) : (
-          <div className="table-container">
-            <table className="table">
+          <>
+            <div className="hidden lg:block table-container">
+              <table className="table">
               <thead className="table-header">
                 <tr>
                   <th className="table-header-cell">Username</th>
@@ -207,8 +211,50 @@ const Users = () => {
               </tbody>
             </table>
           </div>
+
+            {/* Mobile Card View */}
+            <div className="lg:hidden space-y-3">
+              {users.map((userItem, index) => (
+                <motion.div
+                  key={userItem.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.03 }}
+                  onClick={() => { setSelectedUser(userItem); setShowDetailModal(true) }}
+                  className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 border border-gray-200 dark:border-gray-700 cursor-pointer active:scale-[0.99] flex items-center justify-between gap-3"
+                >
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-bold text-gray-800 dark:text-gray-100 truncate">{userItem.username}</h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">{userItem.email}</p>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${userItem.role === 'super_admin' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'}`}>{userItem.role}</span>
+                    <ChevronRight size={20} className="text-gray-400" />
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </>
         )}
       </div>
+
+      <MobileDetailModal isOpen={showDetailModal && !!selectedUser} onClose={() => { setShowDetailModal(false); setSelectedUser(null) }} title={selectedUser?.username || 'User Details'}>
+        {selectedUser && (
+          <div className="space-y-4">
+            <div className="grid gap-3">
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span className="text-sm text-gray-500 dark:text-gray-400">Username</span><span className="text-sm font-medium">{selectedUser.username}</span></div>
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span className="text-sm text-gray-500 dark:text-gray-400">Email</span><span className="text-sm font-medium break-all">{selectedUser.email}</span></div>
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span className="text-sm text-gray-500 dark:text-gray-400">Role</span><span className="text-sm font-medium">{selectedUser.role}</span></div>
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span className="text-sm text-gray-500 dark:text-gray-400">Hostel</span><span className="text-sm font-medium">{selectedUser.hostel_name || 'N/A'}</span></div>
+              <div className="flex justify-between py-2"><span className="text-sm text-gray-500 dark:text-gray-400">Created</span><span className="text-sm font-medium">{new Date(selectedUser.created_at).toLocaleDateString()}</span></div>
+            </div>
+            <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+              <button onClick={() => { setShowDetailModal(false); handleEdit(selectedUser) }} className="flex-1 flex items-center justify-center gap-2 py-3 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg font-medium min-h-[48px]"><Edit size={18} /><span>Edit</span></button>
+              {selectedUser.id !== user.id && <button onClick={() => { setShowDetailModal(false); handleDelete(selectedUser.id) }} className="flex-1 flex items-center justify-center gap-2 py-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg font-medium min-h-[48px]"><Trash2 size={18} /><span>Delete</span></button>}
+            </div>
+          </div>
+        )}
+      </MobileDetailModal>
 
       {showModal && (
         <motion.div

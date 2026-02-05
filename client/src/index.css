@@ -142,20 +142,12 @@ select:focus {
 
 /* Mobile-specific improvements */
 @media (max-width: 640px) {
-  /* Ensure tables are scrollable on mobile */
-  .table-container {
+  /* Tables are hidden on mobile - we use cards instead. Only apply scroll styles
+     when table-container is visible (e.g. on md screens before lg breakpoint) */
+  .table-container:not(.hidden) {
     -webkit-overflow-scrolling: touch;
     overflow-x: auto;
-    display: block;
     width: 100%;
-    margin-left: -0.75rem;
-    margin-right: -0.75rem;
-    padding-left: 0.75rem;
-    padding-right: 0.75rem;
-  }
-  
-  .table {
-    min-width: 640px; /* Ensure table doesn't get too compressed */
   }
   
   /* Better touch targets on mobile */

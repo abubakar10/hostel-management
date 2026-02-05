@@ -1,18 +1,23 @@
 import { useState, useEffect, useRef } from 'react'
 import api from '../config/api'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Edit, Search, X, CheckCircle, XCircle, Clock, Filter, ArrowRight } from 'lucide-react'
+import { Plus, Edit, Search, X, CheckCircle, XCircle, Clock, Filter, ArrowRight, ChevronRight } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useNotification } from '../context/NotificationContext'
+import { useHostel } from '../context/HostelContext'
+import MobileDetailModal from '../components/MobileDetailModal'
 
 const RoomTransfers = () => {
   const { user } = useAuth()
   const { showError, showSuccess, showConfirm } = useNotification()
+  const { selectedHostelId } = useHostel()
   const [transfers, setTransfers] = useState([])
   const [students, setStudents] = useState([])
   const [rooms, setRooms] = useState([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
+  const [showDetailModal, setShowDetailModal] = useState(false)
+  const [selectedTransfer, setSelectedTransfer] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [formData, setFormData] = useState({
@@ -33,7 +38,7 @@ const RoomTransfers = () => {
     fetchTransfers()
     fetchStudents()
     fetchRooms()
-  }, [statusFilter])
+  }, [statusFilter, selectedHostelId])
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -245,7 +250,7 @@ const RoomTransfers = () => {
           </select>
         </div>
 
-        <div className="table-container">
+        <div className="hidden lg:block table-container">
           <table className="table">
             <thead className="table-header">
               <tr>
@@ -331,7 +336,56 @@ const RoomTransfers = () => {
             </div>
           )}
         </div>
+
+        {/* Mobile Card View */}
+        <div className="lg:hidden space-y-3">
+          {filteredTransfers.map((transfer, index) => (
+            <motion.div
+              key={transfer.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.03 }}
+              onClick={() => { setSelectedTransfer(transfer); setShowDetailModal(true) }}
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 border border-gray-200 dark:border-gray-700 cursor-pointer active:scale-[0.99] flex items-center justify-between gap-3"
+            >
+              <div className="flex-1 min-w-0">
+                <h3 className="font-bold text-gray-800 dark:text-gray-100 truncate">{transfer.student_first_name && transfer.student_last_name ? `${transfer.student_first_name} ${transfer.student_last_name}` : 'N/A'}</h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{transfer.from_room || 'N/A'} → {transfer.to_room || 'N/A'}</p>
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(transfer.status)}`}>{transfer.status}</span>
+                <ChevronRight size={20} className="text-gray-400" />
+              </div>
+            </motion.div>
+          ))}
+          {filteredTransfers.length === 0 && (
+            <div className="text-center py-8 text-gray-500">No transfer requests found</div>
+          )}
+        </div>
       </div>
+
+      <MobileDetailModal isOpen={showDetailModal && !!selectedTransfer} onClose={() => { setShowDetailModal(false); setSelectedTransfer(null) }} title={selectedTransfer ? (selectedTransfer.student_first_name && selectedTransfer.student_last_name ? `${selectedTransfer.student_first_name} ${selectedTransfer.student_last_name}` : 'Transfer Details') : 'Transfer Details'}>
+        {selectedTransfer && (
+          <div className="space-y-4">
+            <div className="grid gap-3">
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span className="text-sm text-gray-500 dark:text-gray-400">Student</span><span className="text-sm font-medium">{selectedTransfer.student_first_name && selectedTransfer.student_last_name ? `${selectedTransfer.student_first_name} ${selectedTransfer.student_last_name}` : 'N/A'}</span></div>
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span className="text-sm text-gray-500 dark:text-gray-400">From Room</span><span className="text-sm font-medium">{selectedTransfer.from_room || 'N/A'}</span></div>
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span className="text-sm text-gray-500 dark:text-gray-400">To Room</span><span className="text-sm font-medium">{selectedTransfer.to_room || 'N/A'}</span></div>
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span className="text-sm text-gray-500 dark:text-gray-400">Reason</span><span className="text-sm font-medium">{selectedTransfer.reason || '-'}</span></div>
+              <div className="flex justify-between py-2"><span className="text-sm text-gray-500 dark:text-gray-400">Status</span><span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(selectedTransfer.status)}`}>{selectedTransfer.status}</span></div>
+            </div>
+            <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+              {selectedTransfer.status === 'pending' && (
+                <>
+                  <button onClick={() => { setShowDetailModal(false); handleApprove(selectedTransfer.id) }} className="flex-1 flex items-center justify-center gap-2 py-3 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-lg font-medium min-h-[48px]"><CheckCircle size={18} /><span>Approve</span></button>
+                  <button onClick={() => { setShowDetailModal(false); handleReject(selectedTransfer.id) }} className="flex-1 flex items-center justify-center gap-2 py-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg font-medium min-h-[48px]"><XCircle size={18} /><span>Reject</span></button>
+                </>
+              )}
+              <button onClick={() => { setShowDetailModal(false); handleDelete(selectedTransfer.id) }} className="flex-1 flex items-center justify-center gap-2 py-3 bg-gray-100 dark:bg-gray-700 text-red-600 dark:text-red-400 rounded-lg font-medium min-h-[48px]"><X size={18} /><span>Delete</span></button>
+            </div>
+          </div>
+        )}
+      </MobileDetailModal>
 
       <AnimatePresence>
         {showModal && (

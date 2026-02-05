@@ -1,13 +1,16 @@
 import { useState, useEffect } from 'react'
 import api from '../config/api'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Edit, Search, X, Filter, Utensils, Calendar, DollarSign, Users } from 'lucide-react'
+import { Plus, Edit, Search, X, Filter, Utensils, Calendar, DollarSign, Users, ChevronRight } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useNotification } from '../context/NotificationContext'
+import { useHostel } from '../context/HostelContext'
+import MobileDetailModal from '../components/MobileDetailModal'
 
 const Mess = () => {
   const { user } = useAuth()
   const { showError, showSuccess, showConfirm } = useNotification()
+  const { selectedHostelId } = useHostel()
   const [activeTab, setActiveTab] = useState('menu')
   const [menus, setMenus] = useState([])
   const [mealAttendance, setMealAttendance] = useState([])
@@ -17,6 +20,8 @@ const Mess = () => {
   const [showMenuModal, setShowMenuModal] = useState(false)
   const [showAttendanceModal, setShowAttendanceModal] = useState(false)
   const [editingItem, setEditingItem] = useState(null)
+  const [showDetailModal, setShowDetailModal] = useState(false)
+  const [selectedRecord, setSelectedRecord] = useState(null)
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
   const [menuFormData, setMenuFormData] = useState({
     date: new Date().toISOString().split('T')[0],
@@ -31,7 +36,7 @@ const Mess = () => {
 
   useEffect(() => {
     fetchData()
-  }, [activeTab, selectedDate])
+  }, [activeTab, selectedDate, selectedHostelId])
 
   const fetchData = async () => {
     setLoading(true)
@@ -322,7 +327,7 @@ const Mess = () => {
               className="input-field"
             />
           </div>
-          <div className="table-container">
+          <div className="hidden lg:block table-container">
             <table className="table">
               <thead className="table-header">
                 <tr>
@@ -394,6 +399,33 @@ const Mess = () => {
               </tbody>
             </table>
           </div>
+
+          {/* Mobile Card View - Attendance */}
+          <div className="lg:hidden space-y-3">
+            {students.map((student, index) => {
+              const normalizedSelectedDate = selectedDate.split('T')[0]
+              const breakfast = mealAttendance.find(a => a.student_id === student.id && a.meal_type === 'breakfast' && (a.date?.split('T')[0]) === normalizedSelectedDate)
+              const lunch = mealAttendance.find(a => a.student_id === student.id && a.meal_type === 'lunch' && (a.date?.split('T')[0]) === normalizedSelectedDate)
+              const dinner = mealAttendance.find(a => a.student_id === student.id && a.meal_type === 'dinner' && (a.date?.split('T')[0]) === normalizedSelectedDate)
+              const mealCount = [breakfast?.status === 'present', lunch?.status === 'present', dinner?.status === 'present'].filter(Boolean).length
+              return (
+                <motion.div
+                  key={student.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.03 }}
+                  onClick={() => { setSelectedRecord({ student, breakfast, lunch, dinner }); setShowDetailModal(true) }}
+                  className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 border border-gray-200 dark:border-gray-700 cursor-pointer active:scale-[0.99] flex items-center justify-between gap-3"
+                >
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-bold text-gray-800 dark:text-gray-100 truncate">{student.first_name} {student.last_name}</h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{mealCount}/3 meals marked</p>
+                  </div>
+                  <ChevronRight size={20} className="text-gray-400 flex-shrink-0" />
+                </motion.div>
+              )
+            })}
+          </div>
         </div>
       )}
 
@@ -406,7 +438,7 @@ const Mess = () => {
               This page is for viewing fee status and marking fees as paid.
             </p>
           </div>
-          <div className="table-container">
+          <div className="hidden lg:block table-container">
             <table className="table">
               <thead className="table-header">
                 <tr>
@@ -464,8 +496,66 @@ const Mess = () => {
               </tbody>
             </table>
           </div>
+
+          {/* Mobile Card View - Mess Fees */}
+          <div className="lg:hidden space-y-3">
+            {messFees.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">No mess fees found. Create fees from the Fees module.</div>
+            ) : (
+              messFees.map((fee, index) => (
+                <motion.div
+                  key={fee.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.03 }}
+                  onClick={() => { setSelectedRecord({ fee }); setShowDetailModal(true) }}
+                  className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 border border-gray-200 dark:border-gray-700 cursor-pointer active:scale-[0.99] flex items-center justify-between gap-3"
+                >
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-bold text-gray-800 dark:text-gray-100 truncate">{fee.first_name} {fee.last_name}</h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">RS {parseFloat(fee.amount).toLocaleString()} • {fee.month ? `${fee.month}/${fee.year}` : fee.due_date ? new Date(fee.due_date).toLocaleDateString('en-US', { month: 'numeric', year: 'numeric' }) : 'N/A'}</p>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${fee.status === 'paid' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300'}`}>{fee.status}</span>
+                    <ChevronRight size={20} className="text-gray-400" />
+                  </div>
+                </motion.div>
+              ))
+            )}
+          </div>
         </div>
       )}
+
+      {/* Mobile Detail Modal for Mess */}
+      <MobileDetailModal
+        isOpen={showDetailModal && !!selectedRecord}
+        onClose={() => { setShowDetailModal(false); setSelectedRecord(null) }}
+        title={selectedRecord?.student ? `${selectedRecord.student.first_name} ${selectedRecord.student.last_name}` : selectedRecord?.fee ? `${selectedRecord.fee.first_name} ${selectedRecord.fee.last_name}` : 'Details'}
+      >
+        {selectedRecord?.student && (
+          <div className="space-y-4">
+            <div className="grid gap-3">
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span className="text-sm text-gray-500 dark:text-gray-400">Student</span><span className="text-sm font-medium">{selectedRecord.student.first_name} {selectedRecord.student.last_name}</span></div>
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span className="text-sm text-gray-500 dark:text-gray-400">Breakfast</span><span className={`px-2 py-1 rounded text-xs font-medium ${selectedRecord.breakfast?.status === 'present' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' : selectedRecord.breakfast?.status === 'absent' ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'}`}>{selectedRecord.breakfast?.status === 'present' ? 'Present' : selectedRecord.breakfast?.status === 'absent' ? 'Absent' : 'Not marked'}</span></div>
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span className="text-sm text-gray-500 dark:text-gray-400">Lunch</span><span className={`px-2 py-1 rounded text-xs font-medium ${selectedRecord.lunch?.status === 'present' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' : selectedRecord.lunch?.status === 'absent' ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'}`}>{selectedRecord.lunch?.status === 'present' ? 'Present' : selectedRecord.lunch?.status === 'absent' ? 'Absent' : 'Not marked'}</span></div>
+              <div className="flex justify-between py-2"><span className="text-sm text-gray-500 dark:text-gray-400">Dinner</span><span className={`px-2 py-1 rounded text-xs font-medium ${selectedRecord.dinner?.status === 'present' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' : selectedRecord.dinner?.status === 'absent' ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'}`}>{selectedRecord.dinner?.status === 'present' ? 'Present' : selectedRecord.dinner?.status === 'absent' ? 'Absent' : 'Not marked'}</span></div>
+            </div>
+          </div>
+        )}
+        {selectedRecord?.fee && (
+          <div className="space-y-4">
+            <div className="grid gap-3">
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span className="text-sm text-gray-500 dark:text-gray-400">Student</span><span className="text-sm font-medium">{selectedRecord.fee.first_name} {selectedRecord.fee.last_name}</span></div>
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span className="text-sm text-gray-500 dark:text-gray-400">Month/Year</span><span className="text-sm font-medium">{selectedRecord.fee.month ? `${selectedRecord.fee.month}/${selectedRecord.fee.year}` : selectedRecord.fee.due_date ? new Date(selectedRecord.fee.due_date).toLocaleDateString('en-US', { month: 'numeric', year: 'numeric' }) : 'N/A'}</span></div>
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span className="text-sm text-gray-500 dark:text-gray-400">Amount</span><span className="text-sm font-medium">RS {parseFloat(selectedRecord.fee.amount).toLocaleString()}</span></div>
+              <div className="flex justify-between py-2"><span className="text-sm text-gray-500 dark:text-gray-400">Status</span><span className={`px-2 py-1 rounded-full text-xs font-medium ${selectedRecord.fee.status === 'paid' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300'}`}>{selectedRecord.fee.status}</span></div>
+            </div>
+            {selectedRecord.fee.status === 'pending' && (
+              <button onClick={() => { setShowDetailModal(false); handleMarkFeePaid(selectedRecord.fee.id) }} className="w-full flex items-center justify-center gap-2 py-3 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-lg font-medium min-h-[48px]">Mark as Paid</button>
+            )}
+          </div>
+        )}
+      </MobileDetailModal>
 
       {/* Menu Modal */}
       <AnimatePresence>

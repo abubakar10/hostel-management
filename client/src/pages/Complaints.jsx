@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react'
 import api from '../config/api'
 import { motion } from 'framer-motion'
-import { Plus, Edit, AlertCircle, Wrench, Search, Filter, X } from 'lucide-react'
+import { Plus, Edit, AlertCircle, Wrench, Search, Filter, X, ChevronRight } from 'lucide-react'
 import { useNotification } from '../context/NotificationContext'
+import { useHostel } from '../context/HostelContext'
+import MobileDetailModal from '../components/MobileDetailModal'
 
 const Complaints = () => {
+  const { selectedHostelId } = useHostel()
   const [complaints, setComplaints] = useState([])
   const [maintenance, setMaintenance] = useState([])
   const [students, setStudents] = useState([])
@@ -13,6 +16,8 @@ const Complaints = () => {
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('complaints')
   const [showModal, setShowModal] = useState(false)
+  const [showDetailModal, setShowDetailModal] = useState(false)
+  const [selectedItem, setSelectedItem] = useState(null)
   const [editingItem, setEditingItem] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [filter, setFilter] = useState('all')
@@ -37,7 +42,7 @@ const Complaints = () => {
     fetchStudents()
     fetchStaff()
     fetchRooms()
-  }, [filter, activeTab])
+  }, [filter, activeTab, selectedHostelId])
 
   const fetchComplaints = async () => {
     try {
@@ -348,7 +353,7 @@ const Complaints = () => {
             </table>
           </div>
 
-            {/* Mobile/Tablet Card View */}
+            {/* Mobile Card View - Compact, tap for full details */}
             <div className="lg:hidden space-y-3 sm:space-y-4">
               {(activeTab === 'complaints' ? filteredComplaints : filteredMaintenance).map((item, index) => (
                 <motion.div
@@ -356,82 +361,50 @@ const Complaints = () => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.03 }}
-                  className="bg-white dark:bg-gray-800 rounded-xl shadow-md dark:shadow-gray-900/50 p-4 sm:p-5 border border-gray-200 dark:border-gray-700 hover:shadow-lg dark:hover:shadow-gray-900/70 transition-all duration-200"
+                  onClick={() => { setSelectedItem(item); setShowDetailModal(true) }}
+                  className="bg-white dark:bg-gray-800 rounded-xl shadow-md dark:shadow-gray-900/50 p-4 border border-gray-200 dark:border-gray-700 cursor-pointer active:scale-[0.99] flex items-center justify-between gap-3"
                 >
-                  <div className="flex items-start justify-between mb-3 sm:mb-4">
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-100 break-words">
-                        {item.title}
-                      </h3>
-                      <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        {activeTab === 'complaints' 
-                          ? `${item.first_name} ${item.last_name}`
-                          : `Room ${item.room_number}`
-                        }
-                      </p>
-                    </div>
-                    <div className="flex flex-col gap-2 flex-shrink-0 ml-2">
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
-                        item.priority === 'high' ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300' :
-                        item.priority === 'medium' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300' :
-                        'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
-                      }`}>
-                        {item.priority}
-                      </span>
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
-                        item.status === 'resolved' || item.status === 'completed' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' :
-                        item.status === 'in_progress' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300' :
-                        'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300'
-                      }`}>
-                        {item.status}
-                      </span>
-                    </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-bold text-gray-800 dark:text-gray-100 truncate">{item.title}</h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                      {activeTab === 'complaints' ? `${item.first_name} ${item.last_name}` : `Room ${item.room_number}`}
+                    </p>
                   </div>
-
-                  <div className="space-y-2 sm:space-y-2.5 mb-4 sm:mb-5">
-                    {activeTab === 'complaints' && (
-                      <div className="flex items-center gap-2 sm:gap-3">
-                        <span className="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400 min-w-[80px] sm:min-w-[90px]">
-                          Category:
-                        </span>
-                        <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded text-xs font-medium">
-                          {item.category || 'N/A'}
-                        </span>
-                      </div>
-                    )}
-                    {activeTab === 'maintenance' && (
-                      <div className="flex items-center gap-2 sm:gap-3">
-                        <span className="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400 min-w-[80px] sm:min-w-[90px]">
-                          Requested By:
-                        </span>
-                        <span className="text-xs sm:text-sm text-gray-700 dark:text-gray-300">
-                          {item.student_first_name} {item.student_last_name || 'N/A'}
-                        </span>
-                      </div>
-                    )}
-                    <div className="flex items-center gap-2 sm:gap-3">
-                      <span className="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400 min-w-[80px] sm:min-w-[90px]">
-                        Assigned To:
-                      </span>
-                      <span className="text-xs sm:text-sm text-gray-700 dark:text-gray-300">
-                        {item.staff_first_name ? `${item.staff_first_name} ${item.staff_last_name}` : 'Unassigned'}
-                      </span>
-                    </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${item.status === 'resolved' || item.status === 'completed' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' : item.status === 'in_progress' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300' : 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300'}`}>{item.status}</span>
+                    <ChevronRight size={20} className="text-gray-400" />
                   </div>
-
-                  <button
-                    onClick={() => handleEdit(item)}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 sm:py-3 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg font-medium text-sm sm:text-base hover:bg-blue-100 dark:hover:bg-blue-900/30 active:scale-95 transition-all min-h-[44px] sm:min-h-[48px]"
-                  >
-                    <Edit size={18} className="sm:w-5 sm:h-5" />
-                    <span>Edit</span>
-                  </button>
                 </motion.div>
               ))}
             </div>
           </>
         )}
       </div>
+
+      <MobileDetailModal isOpen={showDetailModal && !!selectedItem} onClose={() => { setShowDetailModal(false); setSelectedItem(null) }} title={selectedItem?.title || 'Details'}>
+        {selectedItem && (
+          <div className="space-y-4">
+            <div className="grid gap-3">
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span className="text-sm text-gray-500 dark:text-gray-400">Title</span><span className="text-sm font-medium">{selectedItem.title}</span></div>
+              {activeTab === 'complaints' ? (
+                <>
+                  <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span className="text-sm text-gray-500 dark:text-gray-400">Student</span><span className="text-sm font-medium">{selectedItem.first_name} {selectedItem.last_name}</span></div>
+                  <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span className="text-sm text-gray-500 dark:text-gray-400">Category</span><span className="text-sm font-medium">{selectedItem.category || 'N/A'}</span></div>
+                </>
+              ) : (
+                <>
+                  <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span className="text-sm text-gray-500 dark:text-gray-400">Room</span><span className="text-sm font-medium">{selectedItem.room_number || 'N/A'}</span></div>
+                  <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span className="text-sm text-gray-500 dark:text-gray-400">Requested By</span><span className="text-sm font-medium">{selectedItem.student_first_name && selectedItem.student_last_name ? `${selectedItem.student_first_name} ${selectedItem.student_last_name}` : 'N/A'}</span></div>
+                </>
+              )}
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span className="text-sm text-gray-500 dark:text-gray-400">Priority</span><span className={`px-2 py-1 rounded-full text-xs font-medium ${selectedItem.priority === 'high' ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300' : selectedItem.priority === 'medium' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300' : 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'}`}>{selectedItem.priority}</span></div>
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span className="text-sm text-gray-500 dark:text-gray-400">Status</span><span className={`px-2 py-1 rounded-full text-xs font-medium ${selectedItem.status === 'resolved' || selectedItem.status === 'completed' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' : selectedItem.status === 'in_progress' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300' : 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300'}`}>{selectedItem.status}</span></div>
+              <div className="flex justify-between py-2"><span className="text-sm text-gray-500 dark:text-gray-400">Assigned To</span><span className="text-sm font-medium">{selectedItem.staff_first_name && selectedItem.staff_last_name ? `${selectedItem.staff_first_name} ${selectedItem.staff_last_name}` : 'Unassigned'}</span></div>
+            </div>
+            <button onClick={() => { setShowDetailModal(false); handleEdit(selectedItem) }} className="w-full flex items-center justify-center gap-2 py-3 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg font-medium min-h-[48px]"><Edit size={18} /><span>Edit</span></button>
+          </div>
+        )}
+      </MobileDetailModal>
 
       {showModal && (
         <motion.div

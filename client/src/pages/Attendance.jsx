@@ -1,11 +1,15 @@
 import { useState, useEffect } from 'react'
 import api from '../config/api'
 import { motion } from 'framer-motion'
-import { Calendar, CheckCircle, XCircle, Clock, Download, AlertCircle } from 'lucide-react'
+import { Calendar, CheckCircle, XCircle, Clock, Download, AlertCircle, ChevronRight } from 'lucide-react'
 import { format } from 'date-fns'
 import { useNotification } from '../context/NotificationContext'
+import { useHostel } from '../context/HostelContext'
+import MobileDetailModal from '../components/MobileDetailModal'
 
 const Attendance = () => {
+  const { showError, showSuccess, showConfirm } = useNotification()
+  const { selectedHostelId } = useHostel()
   const [students, setStudents] = useState([])
   const [attendance, setAttendance] = useState([])
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'))
@@ -13,6 +17,9 @@ const Attendance = () => {
   const [view, setView] = useState('daily')
   const [loading, setLoading] = useState(true)
   const [monthlyReport, setMonthlyReport] = useState([])
+  const [showDetailModal, setShowDetailModal] = useState(false)
+  const [selectedRecord, setSelectedRecord] = useState(null)
+  const [detailView, setDetailView] = useState('daily') // 'daily' | 'monthly'
 
   useEffect(() => {
     fetchStudents()
@@ -21,7 +28,7 @@ const Attendance = () => {
     } else {
       fetchMonthlyReport()
     }
-  }, [selectedDate, selectedMonth, view])
+  }, [selectedDate, selectedMonth, view, selectedHostelId])
 
   const fetchStudents = async () => {
     try {
@@ -208,7 +215,7 @@ const Attendance = () => {
                   }
                   return null
                 })()}
-                <div className="table-container">
+                <div className="hidden lg:block table-container">
                 <table className="table">
                   <thead className="table-header">
                     <tr>
@@ -302,6 +309,40 @@ const Attendance = () => {
                   </tbody>
                 </table>
               </div>
+
+                {/* Mobile Card View - Daily */}
+                <div className="lg:hidden space-y-3">
+                  {students.map((student, index) => {
+                    const attendanceRecord = attendance.find(a => a.student_id === student.id)
+                    const status = attendanceRecord?.status || 'absent'
+                    const selectedDateObj = new Date(selectedDate)
+                    const registrationDate = student.created_at ? new Date(student.created_at) : null
+                    const canMarkAttendance = !registrationDate || selectedDateObj >= registrationDate
+                    return (
+                      <motion.div
+                        key={student.id}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.03 }}
+                        onClick={() => canMarkAttendance && (setSelectedRecord({ ...student, status, attendanceRecord }), setDetailView('daily'), setShowDetailModal(true))}
+                        className={`bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 border border-gray-200 dark:border-gray-700 flex items-center justify-between gap-3 ${!canMarkAttendance ? 'opacity-60' : 'cursor-pointer active:scale-[0.99]'}`}
+                      >
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-bold text-gray-800 dark:text-gray-100 truncate">{student.first_name} {student.last_name}</h3>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{student.student_id} • Room {student.room_number || 'N/A'}</p>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            status === 'present' ? 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300' :
+                            status === 'late' ? 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-300' :
+                            'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-300'
+                          }`}>{status}</span>
+                          {canMarkAttendance && <ChevronRight size={20} className="text-gray-400" />}
+                        </div>
+                      </motion.div>
+                    )
+                  })}
+                </div>
               </>
             )}
           </div>
@@ -323,7 +364,8 @@ const Attendance = () => {
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
             </div>
           ) : (
-            <div className="table-container">
+            <>
+            <div className="hidden lg:block table-container">
               <table className="table">
                 <thead className="table-header">
                   <tr>
@@ -371,9 +413,75 @@ const Attendance = () => {
                 </tbody>
               </table>
             </div>
+
+            {/* Mobile Card View - Monthly */}
+            <div className="lg:hidden space-y-3">
+              {monthlyReport.map((record, index) => {
+                const total = record.total_days || 0
+                const present = record.present_days || 0
+                const percentage = total > 0 ? ((present / total) * 100).toFixed(1) : 0
+                return (
+                  <motion.div
+                    key={record.student_id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.03 }}
+                    onClick={() => (setSelectedRecord({ ...record, total, percentage }), setDetailView('monthly'), setShowDetailModal(true))}
+                    className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 border border-gray-200 dark:border-gray-700 cursor-pointer active:scale-[0.99] flex items-center justify-between gap-3"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-bold text-gray-800 dark:text-gray-100 truncate">{record.first_name} {record.last_name}</h3>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">ID: {record.student_number}</p>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span className={`font-semibold ${percentage >= 75 ? 'text-green-600 dark:text-green-400' : percentage >= 50 ? 'text-yellow-600 dark:text-yellow-400' : 'text-red-600 dark:text-red-400'}`}>{percentage}%</span>
+                      <ChevronRight size={20} className="text-gray-400" />
+                    </div>
+                  </motion.div>
+                )
+              })}
+            </div>
+            </>
           )}
         </div>
       )}
+
+      {/* Mobile Detail Modal */}
+      <MobileDetailModal
+        isOpen={showDetailModal && !!selectedRecord}
+        onClose={() => { setShowDetailModal(false); setSelectedRecord(null) }}
+        title={selectedRecord ? (detailView === 'daily' ? `${selectedRecord.first_name} ${selectedRecord.last_name}` : `${selectedRecord.first_name} ${selectedRecord.last_name}`) : 'Details'}
+      >
+        {selectedRecord && detailView === 'daily' && (
+          <div className="space-y-4">
+            <div className="grid gap-3">
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span className="text-sm text-gray-500 dark:text-gray-400">Student ID</span><span className="text-sm font-medium">{selectedRecord.student_id}</span></div>
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span className="text-sm text-gray-500 dark:text-gray-400">Room</span><span className="text-sm font-medium">{selectedRecord.room_number || 'N/A'}</span></div>
+              <div className="flex justify-between py-2"><span className="text-sm text-gray-500 dark:text-gray-400">Status</span><span className={`px-2 py-1 rounded-full text-xs font-medium ${selectedRecord.status === 'present' ? 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300' : selectedRecord.status === 'late' ? 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-300' : 'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-300'}`}>{selectedRecord.status}</span></div>
+            </div>
+            <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-3">Mark Attendance</p>
+              <div className="flex gap-2">
+                <button onClick={() => { handleAttendanceChange(selectedRecord.id, 'present'); setShowDetailModal(false) }} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg font-medium min-h-[48px] ${selectedRecord.status === 'present' ? 'bg-green-100 dark:bg-green-900/20 text-green-600 dark:text-green-400' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'}`}><CheckCircle size={18} />Present</button>
+                <button onClick={() => { handleAttendanceChange(selectedRecord.id, 'late'); setShowDetailModal(false) }} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg font-medium min-h-[48px] ${selectedRecord.status === 'late' ? 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'}`}><Clock size={18} />Late</button>
+                <button onClick={() => { handleAttendanceChange(selectedRecord.id, 'absent'); setShowDetailModal(false) }} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg font-medium min-h-[48px] ${selectedRecord.status === 'absent' ? 'bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'}`}><XCircle size={18} />Absent</button>
+              </div>
+            </div>
+          </div>
+        )}
+        {selectedRecord && detailView === 'monthly' && (
+          <div className="space-y-4">
+            <div className="grid gap-3">
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span className="text-sm text-gray-500 dark:text-gray-400">Student ID</span><span className="text-sm font-medium">{selectedRecord.student_number}</span></div>
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span className="text-sm text-gray-500 dark:text-gray-400">Present</span><span className="text-sm font-semibold text-green-600 dark:text-green-400">{selectedRecord.present_days || 0}</span></div>
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span className="text-sm text-gray-500 dark:text-gray-400">Absent</span><span className="text-sm font-semibold text-red-600 dark:text-red-400">{selectedRecord.absent_days || 0}</span></div>
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span className="text-sm text-gray-500 dark:text-gray-400">Late</span><span className="text-sm font-semibold text-yellow-600 dark:text-yellow-400">{selectedRecord.late_days || 0}</span></div>
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span className="text-sm text-gray-500 dark:text-gray-400">Total Days</span><span className="text-sm font-medium">{selectedRecord.total}</span></div>
+              <div className="flex justify-between py-2"><span className="text-sm text-gray-500 dark:text-gray-400">Attendance %</span><span className={`text-sm font-semibold ${selectedRecord.percentage >= 75 ? 'text-green-600 dark:text-green-400' : selectedRecord.percentage >= 50 ? 'text-yellow-600 dark:text-yellow-400' : 'text-red-600 dark:text-red-400'}`}>{selectedRecord.percentage}%</span></div>
+            </div>
+          </div>
+        )}
+      </MobileDetailModal>
     </div>
   )
 }

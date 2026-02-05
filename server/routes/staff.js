@@ -68,7 +68,7 @@ router.get('/role/:role', authenticateToken, async (req, res) => {
 router.post('/', authenticateToken, setHostelContext, async (req, res) => {
   try {
     const {
-      staff_id, first_name, last_name, email, phone, role, shift, salary, hire_date, status, hostel_id
+      staff_id, first_name, last_name, email, phone, role, shift, salary, hire_date, status, hostel_id, photo
     } = req.body;
 
     // Validate required fields
@@ -110,9 +110,9 @@ router.post('/', authenticateToken, setHostelContext, async (req, res) => {
     }
 
     const result = await pool.query(
-      `INSERT INTO staff (staff_id, first_name, last_name, email, phone, role, shift, salary, hire_date, status, hostel_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
-      [staff_id, first_name, last_name, email, phone || null, role, shift || null, salaryValue, hireDateValue, status || 'active', finalHostelId]
+      `INSERT INTO staff (staff_id, first_name, last_name, email, phone, role, shift, salary, hire_date, status, hostel_id, photo)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
+      [staff_id, first_name, last_name, email, phone || null, role, shift || null, salaryValue, hireDateValue, status || 'active', finalHostelId, photo || null]
     );
 
     res.status(201).json(result.rows[0]);
@@ -128,7 +128,7 @@ router.post('/', authenticateToken, setHostelContext, async (req, res) => {
 router.put('/:id', authenticateToken, async (req, res) => {
   try {
     const {
-      first_name, last_name, email, phone, role, shift, salary, hire_date, status
+      first_name, last_name, email, phone, role, shift, salary, hire_date, status, photo
     } = req.body;
 
     // Validate required fields
@@ -163,9 +163,9 @@ router.put('/:id', authenticateToken, async (req, res) => {
 
     const result = await pool.query(
       `UPDATE staff SET first_name = $1, last_name = $2, email = $3, phone = $4, 
-       role = $5, shift = $6, salary = $7, hire_date = $8, status = $9
-       WHERE id = $10 RETURNING *`,
-      [first_name, last_name, email, phone || null, role, shift || null, salaryValue, hireDateValue, status, req.params.id]
+       role = $5, shift = $6, salary = $7, hire_date = $8, status = $9, photo = $10
+       WHERE id = $11 RETURNING *`,
+      [first_name, last_name, email, phone || null, role, shift || null, salaryValue, hireDateValue, status, photo || null, req.params.id]
     );
 
     if (result.rows.length === 0) {

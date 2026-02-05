@@ -1,14 +1,20 @@
 import { useState, useEffect } from 'react'
 import api from '../config/api'
-import { motion } from 'framer-motion'
-import { Plus, Edit, Trash2, Search, UserCog, Users, Shield, X } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Plus, Edit, Trash2, Search, UserCog, Users, Shield, X, ChevronRight, User } from 'lucide-react'
+import { compressImageToBase64 } from '../utils/imageUtils'
 import { useNotification } from '../context/NotificationContext'
+import { useHostel } from '../context/HostelContext'
+import MobileDetailModal from '../components/MobileDetailModal'
 
 const Staff = () => {
   const { showError, showSuccess, showConfirm } = useNotification()
+  const { selectedHostelId } = useHostel()
   const [staff, setStaff] = useState([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
+  const [showDetailModal, setShowDetailModal] = useState(false)
+  const [selectedStaff, setSelectedStaff] = useState(null)
   const [editingStaff, setEditingStaff] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [filter, setFilter] = useState('all')
@@ -22,12 +28,13 @@ const Staff = () => {
     shift: '',
     salary: '',
     hire_date: '',
-    status: 'active'
+    status: 'active',
+    photo: ''
   })
 
   useEffect(() => {
     fetchStaff()
-  }, [filter])
+  }, [filter, selectedHostelId])
 
   const fetchStaff = async () => {
     try {
@@ -90,7 +97,8 @@ const Staff = () => {
         salary: formData.salary && formData.salary.toString().trim() !== '' ? parseFloat(formData.salary) : null,
         hire_date: formData.hire_date && formData.hire_date.trim() !== '' ? formData.hire_date : null,
         phone: formData.phone && formData.phone.trim() !== '' ? formData.phone : null,
-        shift: formData.shift && formData.shift.trim() !== '' ? formData.shift : null
+        shift: formData.shift && formData.shift.trim() !== '' ? formData.shift : null,
+        photo: formData.photo || null
       }
       
       if (editingStaff) {
@@ -122,6 +130,21 @@ const Staff = () => {
     )
   }
 
+  const handlePhotoChange = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!file.type.startsWith('image/')) {
+      showError('Please select an image file (JPG, PNG, etc.)')
+      return
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      showError('Image must be under 5MB')
+      return
+    }
+    const base64 = await compressImageToBase64(file)
+    if (base64) setFormData(prev => ({ ...prev, photo: base64 }))
+  }
+
   const handleEdit = (staffMember) => {
     setEditingStaff(staffMember)
     setFormData({
@@ -134,7 +157,8 @@ const Staff = () => {
       shift: staffMember.shift || '',
       salary: staffMember.salary || '',
       hire_date: staffMember.hire_date || '',
-      status: staffMember.status || 'active'
+      status: staffMember.status || 'active',
+      photo: staffMember.photo || ''
     })
     setShowModal(true)
   }
@@ -150,7 +174,8 @@ const Staff = () => {
       shift: '',
       salary: '',
       hire_date: '',
-      status: 'active'
+      status: 'active',
+      photo: ''
     })
     setEditingStaff(null)
   }
@@ -254,10 +279,13 @@ const Staff = () => {
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
           </div>
         ) : (
-          <div className="table-container">
-            <table className="table">
+          <>
+            {/* Desktop Table View */}
+            <div className="hidden lg:block table-container">
+              <table className="table">
               <thead className="table-header">
                 <tr>
+                  <th className="table-header-cell w-14">Photo</th>
                   <th className="table-header-cell">Staff ID</th>
                   <th className="table-header-cell">Name</th>
                   <th className="table-header-cell">Email</th>
@@ -277,6 +305,15 @@ const Staff = () => {
                     transition={{ delay: index * 0.05 }}
                     className="hover:bg-gray-50 dark:hover:bg-gray-700"
                   >
+                    <td className="table-cell">
+                      {staffMember.photo ? (
+                        <img src={staffMember.photo} alt="" className="w-10 h-10 rounded-full object-cover" />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center">
+                          <User size={20} className="text-gray-500 dark:text-gray-400" />
+                        </div>
+                      )}
+                    </td>
                     <td className="table-cell font-medium">{staffMember.staff_id}</td>
                     <td className="table-cell">{staffMember.first_name} {staffMember.last_name}</td>
                     <td className="table-cell">{staffMember.email}</td>
@@ -327,8 +364,115 @@ const Staff = () => {
               </tbody>
             </table>
           </div>
+
+            {/* Mobile Card View */}
+            <div className="lg:hidden space-y-3">
+              {filteredStaff.map((staffMember, index) => (
+                <motion.div
+                  key={staffMember.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.03 }}
+                  onClick={() => {
+                    setSelectedStaff(staffMember)
+                    setShowDetailModal(true)
+                  }}
+                  className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 border border-gray-200 dark:border-gray-700 cursor-pointer active:scale-[0.99] flex items-center justify-between gap-3"
+                >
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    {staffMember.photo ? (
+                      <img src={staffMember.photo} alt="" className="w-12 h-12 rounded-full object-cover flex-shrink-0" />
+                    ) : (
+                      <div className="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center flex-shrink-0">
+                        <User size={24} className="text-gray-500 dark:text-gray-400" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                    <h3 className="font-bold text-gray-800 dark:text-gray-100 truncate">
+                      {staffMember.first_name} {staffMember.last_name}
+                    </h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                      ID: {staffMember.staff_id} • {staffMember.role?.replace('_', ' ')}
+                    </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      staffMember.status === 'active' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+                    }`}>
+                      {staffMember.status}
+                    </span>
+                    <ChevronRight size={20} className="text-gray-400" />
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </>
         )}
       </div>
+
+      {/* Mobile Detail Modal */}
+      <MobileDetailModal
+        isOpen={showDetailModal && !!selectedStaff}
+        onClose={() => { setShowDetailModal(false); setSelectedStaff(null) }}
+        title={selectedStaff ? `${selectedStaff.first_name} ${selectedStaff.last_name}` : 'Staff Details'}
+      >
+        {selectedStaff && (
+          <div className="space-y-4">
+            <div className="flex justify-center mb-4">
+              {selectedStaff.photo ? (
+                <img src={selectedStaff.photo} alt="" className="w-24 h-24 rounded-full object-cover border-2 border-gray-200 dark:border-gray-600" />
+              ) : (
+                <div className="w-24 h-24 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center">
+                  <User size={48} className="text-gray-500 dark:text-gray-400" />
+                </div>
+              )}
+            </div>
+            <div className="grid gap-3">
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+                <span className="text-sm text-gray-500 dark:text-gray-400">Staff ID</span>
+                <span className="text-sm font-medium">{selectedStaff.staff_id}</span>
+              </div>
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+                <span className="text-sm text-gray-500 dark:text-gray-400">Email</span>
+                <span className="text-sm font-medium break-all">{selectedStaff.email}</span>
+              </div>
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+                <span className="text-sm text-gray-500 dark:text-gray-400">Phone</span>
+                <span className="text-sm font-medium">{selectedStaff.phone || 'N/A'}</span>
+              </div>
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+                <span className="text-sm text-gray-500 dark:text-gray-400">Role</span>
+                <span className="text-sm font-medium capitalize">{selectedStaff.role?.replace('_', ' ')}</span>
+              </div>
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+                <span className="text-sm text-gray-500 dark:text-gray-400">Shift</span>
+                <span className="text-sm font-medium">{selectedStaff.shift || 'N/A'}</span>
+              </div>
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+                <span className="text-sm text-gray-500 dark:text-gray-400">Salary</span>
+                <span className="text-sm font-medium">{selectedStaff.salary ? `RS${parseFloat(selectedStaff.salary).toLocaleString()}` : 'N/A'}</span>
+              </div>
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+                <span className="text-sm text-gray-500 dark:text-gray-400">Hire Date</span>
+                <span className="text-sm font-medium">{selectedStaff.hire_date ? new Date(selectedStaff.hire_date).toLocaleDateString() : 'N/A'}</span>
+              </div>
+              <div className="flex justify-between py-2">
+                <span className="text-sm text-gray-500 dark:text-gray-400">Status</span>
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${selectedStaff.status === 'active' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'}`}>{selectedStaff.status}</span>
+              </div>
+            </div>
+            <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+              <button onClick={() => { setShowDetailModal(false); handleEdit(selectedStaff) }} className="flex-1 flex items-center justify-center gap-2 py-3 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg font-medium min-h-[48px]">
+                <Edit size={18} /><span>Edit</span>
+              </button>
+              <button onClick={() => { setShowDetailModal(false); handleDelete(selectedStaff.id) }} className="flex-1 flex items-center justify-center gap-2 py-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg font-medium min-h-[48px]">
+                <Trash2 size={18} /><span>Delete</span>
+              </button>
+            </div>
+          </div>
+        )}
+      </MobileDetailModal>
 
       {showModal && (
         <motion.div
@@ -365,6 +509,37 @@ const Staff = () => {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Photo <span className="text-gray-400 font-normal">(optional)</span>
+                </label>
+                <div className="flex items-center gap-4">
+                  {formData.photo ? (
+                    <div className="flex items-center gap-3">
+                      <img src={formData.photo} alt="Preview" className="w-16 h-16 rounded-full object-cover border-2 border-gray-200 dark:border-gray-600" />
+                      <button
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, photo: '' }))}
+                        className="text-sm text-red-600 dark:text-red-400 hover:underline"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="cursor-pointer">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handlePhotoChange}
+                        className="hidden"
+                      />
+                      <span className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 text-sm">
+                        Choose image
+                      </span>
+                    </label>
+                  )}
+                </div>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">

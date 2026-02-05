@@ -1,16 +1,21 @@
 import { useState, useEffect, useRef } from 'react'
 import api from '../config/api'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Edit, Search, X, Users } from 'lucide-react'
+import { Plus, Edit, Search, X, Users, ChevronRight } from 'lucide-react'
 import { useNotification } from '../context/NotificationContext'
+import { useHostel } from '../context/HostelContext'
+import MobileDetailModal from '../components/MobileDetailModal'
 
 const Rooms = () => {
   const { showError, showSuccess } = useNotification()
+  const { selectedHostelId } = useHostel()
   const [rooms, setRooms] = useState([])
   const [roomTypes, setRoomTypes] = useState([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [showAllocationModal, setShowAllocationModal] = useState(false)
+  const [showDetailModal, setShowDetailModal] = useState(false)
+  const [selectedRoom, setSelectedRoom] = useState(null)
   const [editingRoom, setEditingRoom] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [formData, setFormData] = useState({
@@ -34,7 +39,7 @@ const Rooms = () => {
     fetchRooms()
     fetchRoomTypes()
     fetchStudents()
-  }, [])
+  }, [selectedHostelId])
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -318,7 +323,7 @@ const Rooms = () => {
               </table>
             </div>
 
-            {/* Mobile/Tablet Card View */}
+            {/* Mobile/Tablet Card View - Compact, tap for full details */}
             <div className="lg:hidden space-y-3 sm:space-y-4">
               {filteredRooms.map((room, index) => (
                 <motion.div
@@ -326,65 +331,50 @@ const Rooms = () => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.03 }}
-                  className="bg-white dark:bg-gray-800 rounded-xl shadow-md dark:shadow-gray-900/50 p-4 sm:p-5 border border-gray-200 dark:border-gray-700 hover:shadow-lg dark:hover:shadow-gray-900/70 transition-all duration-200"
+                  onClick={() => { setSelectedRoom(room); setShowDetailModal(true) }}
+                  className="bg-white dark:bg-gray-800 rounded-xl shadow-md dark:shadow-gray-900/50 p-4 border border-gray-200 dark:border-gray-700 cursor-pointer active:scale-[0.99] flex items-center justify-between gap-3"
                 >
-                  <div className="flex items-start justify-between mb-3 sm:mb-4">
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-100">
-                        Room {room.room_number}
-                      </h3>
-                      <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-                        {room.type_name || 'N/A'} {room.floor && `• Floor ${room.floor}`}
-                      </p>
-                    </div>
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium flex-shrink-0 ml-2 ${
-                      room.status === 'available' 
-                        ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' 
-                        : room.status === 'occupied'
-                        ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'
-                        : room.status === 'partially_occupied'
-                        ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300'
-                        : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-base font-bold text-gray-800 dark:text-gray-100">
+                      Room {room.room_number}
+                    </h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                      {room.type_name || 'N/A'} • {room.current_occupancy_count || 0}/{room.capacity} beds
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      room.status === 'available' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' :
+                      room.status === 'occupied' ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300' :
+                      room.status === 'partially_occupied' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300' :
+                      'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
                     }`}>
-                      {room.status === 'partially_occupied' ? 'Partially' : 
-                       room.status === 'occupied' ? 'Occupied' :
-                       room.status === 'maintenance' ? 'Maintenance' :
-                       'Available'}
+                      {room.status === 'partially_occupied' ? 'Partially' : room.status === 'occupied' ? 'Occupied' : room.status === 'maintenance' ? 'Maintenance' : 'Available'}
                     </span>
+                    <ChevronRight size={20} className="text-gray-400" />
                   </div>
-
-                  <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-5">
-                    <div>
-                      <p className="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
-                        Capacity
-                      </p>
-                      <p className="text-sm sm:text-base font-semibold text-gray-700 dark:text-gray-300">
-                        {room.capacity} beds
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
-                        Occupancy
-                      </p>
-                      <p className="text-sm sm:text-base font-semibold text-gray-700 dark:text-gray-300">
-                        {room.current_occupancy_count || 0} / {room.capacity}
-                      </p>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={() => handleEdit(room)}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 sm:py-3 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg font-medium text-sm sm:text-base hover:bg-blue-100 dark:hover:bg-blue-900/30 active:scale-95 transition-all min-h-[44px] sm:min-h-[48px]"
-                  >
-                    <Edit size={18} className="sm:w-5 sm:h-5" />
-                    <span>Edit Room</span>
-                  </button>
                 </motion.div>
               ))}
             </div>
           </>
         )}
       </div>
+
+      <MobileDetailModal isOpen={showDetailModal && !!selectedRoom} onClose={() => { setShowDetailModal(false); setSelectedRoom(null) }} title={selectedRoom ? `Room ${selectedRoom.room_number}` : 'Room Details'}>
+        {selectedRoom && (
+          <div className="space-y-4">
+            <div className="grid gap-3">
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span className="text-sm text-gray-500 dark:text-gray-400">Room Number</span><span className="text-sm font-medium">{selectedRoom.room_number}</span></div>
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span className="text-sm text-gray-500 dark:text-gray-400">Type</span><span className="text-sm font-medium">{selectedRoom.type_name || 'N/A'}</span></div>
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span className="text-sm text-gray-500 dark:text-gray-400">Floor</span><span className="text-sm font-medium">{selectedRoom.floor || 'N/A'}</span></div>
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span className="text-sm text-gray-500 dark:text-gray-400">Capacity</span><span className="text-sm font-medium">{selectedRoom.capacity} beds</span></div>
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span className="text-sm text-gray-500 dark:text-gray-400">Occupancy</span><span className="text-sm font-medium">{selectedRoom.current_occupancy_count || 0} / {selectedRoom.capacity}</span></div>
+              <div className="flex justify-between py-2"><span className="text-sm text-gray-500 dark:text-gray-400">Status</span><span className={`px-2 py-1 rounded-full text-xs font-medium ${selectedRoom.status === 'available' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' : selectedRoom.status === 'occupied' ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300' : selectedRoom.status === 'partially_occupied' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'}`}>{selectedRoom.status === 'partially_occupied' ? 'Partially Occupied' : selectedRoom.status === 'occupied' ? 'Occupied' : selectedRoom.status === 'maintenance' ? 'Maintenance' : 'Available'}</span></div>
+            </div>
+            <button onClick={() => { setShowDetailModal(false); handleEdit(selectedRoom) }} className="w-full flex items-center justify-center gap-2 py-3 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg font-medium min-h-[48px]"><Edit size={18} /><span>Edit Room</span></button>
+          </div>
+        )}
+      </MobileDetailModal>
 
       <AnimatePresence>
         {showModal && (

@@ -18,9 +18,11 @@ import {
   Percent
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import { useHostel } from '../context/HostelContext'
 
 const Dashboard = () => {
   const { user } = useAuth()
+  const { isSuperAdmin, selectedHostelId } = useHostel()
   const navigate = useNavigate()
   const [stats, setStats] = useState({
     students: 0,
@@ -43,11 +45,13 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    // Super admin must select a hostel first
+    if (isSuperAdmin && !selectedHostelId) return
     fetchDashboardData()
     // Refresh every 5 minutes
     const interval = setInterval(fetchDashboardData, 300000)
     return () => clearInterval(interval)
-  }, [])
+  }, [isSuperAdmin, selectedHostelId])
 
   const fetchDashboardData = async () => {
     try {

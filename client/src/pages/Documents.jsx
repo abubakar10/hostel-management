@@ -1,18 +1,23 @@
 import { useState, useEffect } from 'react'
 import api from '../config/api'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Edit, Trash2, Search, X, FileText, Download, Upload, Filter } from 'lucide-react'
+import { Plus, Edit, Trash2, Search, X, FileText, Download, Upload, Filter, ChevronRight } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useNotification } from '../context/NotificationContext'
+import { useHostel } from '../context/HostelContext'
+import MobileDetailModal from '../components/MobileDetailModal'
 
 const Documents = () => {
   const { user } = useAuth()
   const { showError, showSuccess, showConfirm } = useNotification()
+  const { selectedHostelId } = useHostel()
   const [documents, setDocuments] = useState([])
   const [students, setStudents] = useState([])
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
   const [showModal, setShowModal] = useState(false)
+  const [showDetailModal, setShowDetailModal] = useState(false)
+  const [selectedDoc, setSelectedDoc] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [studentFilter, setStudentFilter] = useState('all')
   const [typeFilter, setTypeFilter] = useState('all')
@@ -25,7 +30,7 @@ const Documents = () => {
   useEffect(() => {
     fetchDocuments()
     fetchStudents()
-  }, [studentFilter, typeFilter])
+  }, [studentFilter, typeFilter, selectedHostelId])
 
   const fetchDocuments = async () => {
     try {
@@ -238,7 +243,7 @@ const Documents = () => {
           </select>
         </div>
 
-        <div className="table-container">
+        <div className="hidden lg:block table-container">
           <table className="table">
             <thead className="table-header">
               <tr>
@@ -303,7 +308,51 @@ const Documents = () => {
             </div>
           )}
         </div>
+
+        {/* Mobile Card View */}
+        <div className="lg:hidden space-y-3">
+          {filteredDocuments.map((doc, index) => (
+            <motion.div
+              key={doc.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.03 }}
+              onClick={() => { setSelectedDoc(doc); setShowDetailModal(true) }}
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 border border-gray-200 dark:border-gray-700 cursor-pointer active:scale-[0.99] flex items-center justify-between gap-3"
+            >
+              <div className="flex-1 min-w-0">
+                <h3 className="font-bold text-gray-800 dark:text-gray-100 truncate">{doc.file_name || 'Document'}</h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                  {doc.student_first_name && doc.student_last_name ? `${doc.student_first_name} ${doc.student_last_name}` : 'N/A'} • {doc.document_type?.replace('_', ' ')}
+                </p>
+              </div>
+              <ChevronRight size={20} className="text-gray-400 flex-shrink-0" />
+            </motion.div>
+          ))}
+          {filteredDocuments.length === 0 && (
+            <div className="text-center py-8 text-gray-500">No documents found</div>
+          )}
+        </div>
       </div>
+
+      <MobileDetailModal isOpen={showDetailModal && !!selectedDoc} onClose={() => { setShowDetailModal(false); setSelectedDoc(null) }} title={selectedDoc?.file_name || 'Document Details'}>
+        {selectedDoc && (
+          <div className="space-y-4">
+            <div className="grid gap-3">
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span className="text-sm text-gray-500 dark:text-gray-400">Student</span><span className="text-sm font-medium">{selectedDoc.student_first_name && selectedDoc.student_last_name ? `${selectedDoc.student_first_name} ${selectedDoc.student_last_name}` : 'N/A'}</span></div>
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span className="text-sm text-gray-500 dark:text-gray-400">Document Type</span><span className="text-sm font-medium capitalize">{selectedDoc.document_type?.replace('_', ' ')}</span></div>
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span className="text-sm text-gray-500 dark:text-gray-400">File Name</span><span className="text-sm font-medium break-all">{selectedDoc.file_name || '-'}</span></div>
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span className="text-sm text-gray-500 dark:text-gray-400">Size</span><span className="text-sm font-medium">{getFileSize(selectedDoc.file_size)}</span></div>
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span className="text-sm text-gray-500 dark:text-gray-400">Uploaded By</span><span className="text-sm font-medium">{selectedDoc.uploaded_by_name || '-'}</span></div>
+              <div className="flex justify-between py-2"><span className="text-sm text-gray-500 dark:text-gray-400">Upload Date</span><span className="text-sm font-medium">{selectedDoc.created_at ? new Date(selectedDoc.created_at).toLocaleDateString() : '-'}</span></div>
+            </div>
+            <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+              <button onClick={() => handleDownload(selectedDoc.id, selectedDoc.file_name)} className="flex-1 flex items-center justify-center gap-2 py-3 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-lg font-medium min-h-[48px]"><Download size={18} /><span>Download</span></button>
+              <button onClick={() => { setShowDetailModal(false); handleDelete(selectedDoc.id) }} className="flex-1 flex items-center justify-center gap-2 py-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg font-medium min-h-[48px]"><Trash2 size={18} /><span>Delete</span></button>
+            </div>
+          </div>
+        )}
+      </MobileDetailModal>
 
       <AnimatePresence>
         {showModal && (

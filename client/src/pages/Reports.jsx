@@ -17,6 +17,7 @@ import {
   ResponsiveContainer
 } from 'recharts'
 import { TrendingUp, TrendingDown, DollarSign, Calendar } from 'lucide-react'
+import { useHostel } from '../context/HostelContext'
 
 // Custom Tooltip component for dark mode
 const CustomTooltip = ({ active, payload, label }) => {
@@ -45,6 +46,7 @@ const CustomTooltip = ({ active, payload, label }) => {
 }
 
 const Reports = () => {
+  const { selectedHostelId } = useHostel()
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1)
   const [incomeExpenses, setIncomeExpenses] = useState(null)
@@ -57,7 +59,7 @@ const Reports = () => {
 
   useEffect(() => {
     fetchReports()
-  }, [selectedYear, selectedMonth])
+  }, [selectedYear, selectedMonth, selectedHostelId])
 
   const fetchReports = async () => {
     setLoading(true)

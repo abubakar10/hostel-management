@@ -1,13 +1,16 @@
 import { useState, useEffect } from 'react'
 import api from '../../config/api'
 import { motion } from 'framer-motion'
-import { DollarSign, CheckCircle, Clock, AlertCircle, FileText } from 'lucide-react'
+import { DollarSign, CheckCircle, Clock, AlertCircle, FileText, ChevronRight } from 'lucide-react'
 import { useNotification } from '../../context/NotificationContext'
+import MobileDetailModal from '../../components/MobileDetailModal'
 
 const StudentFees = () => {
   const { showError } = useNotification()
   const [fees, setFees] = useState([])
   const [loading, setLoading] = useState(true)
+  const [showDetailModal, setShowDetailModal] = useState(false)
+  const [selectedFee, setSelectedFee] = useState(null)
 
   useEffect(() => {
     fetchFees()
@@ -83,7 +86,7 @@ const StudentFees = () => {
 
       {/* Fees List */}
       <div className="card">
-        <div className="table-container -mx-3 sm:mx-0">
+        <div className="hidden lg:block table-container -mx-3 sm:mx-0">
           <table className="table">
             <thead className="table-header">
               <tr>
@@ -138,7 +141,47 @@ const StudentFees = () => {
             </div>
           )}
         </div>
+
+        {/* Mobile Card View */}
+        <div className="lg:hidden space-y-3">
+          {fees.map((fee, index) => (
+            <motion.div
+              key={fee.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.03 }}
+              onClick={() => { setSelectedFee(fee); setShowDetailModal(true) }}
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 border border-gray-200 dark:border-gray-700 cursor-pointer active:scale-[0.99] flex items-center justify-between gap-3"
+            >
+              <div className="flex-1 min-w-0">
+                <h3 className="font-bold text-gray-800 dark:text-gray-100">
+                  {fee.fee_type === 'security' ? 'Security Fee' : fee.fee_type === 'fine' ? 'Fine' : fee.fee_type === 'hostel' ? 'Hostel Fee' : fee.fee_type === 'mess' ? 'Mess Fee' : fee.fee_type}
+                </h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">RS {parseFloat(fee.amount).toLocaleString()} • Due {new Date(fee.due_date).toLocaleDateString()}</p>
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(fee.status)}`}>{fee.status}</span>
+                <ChevronRight size={20} className="text-gray-400" />
+              </div>
+            </motion.div>
+          ))}
+          {fees.length === 0 && (
+            <div className="text-center py-8 text-gray-500 dark:text-gray-400">No fees found</div>
+          )}
+        </div>
       </div>
+
+      <MobileDetailModal isOpen={showDetailModal && !!selectedFee} onClose={() => { setShowDetailModal(false); setSelectedFee(null) }} title={selectedFee ? (selectedFee.fee_type === 'security' ? 'Security Fee' : selectedFee.fee_type === 'hostel' ? 'Hostel Fee' : selectedFee.fee_type === 'mess' ? 'Mess Fee' : selectedFee.fee_type) : 'Fee Details'}>
+        {selectedFee && (
+          <div className="grid gap-3">
+            <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span className="text-sm text-gray-500 dark:text-gray-400">Fee Type</span><span className="text-sm font-medium">{selectedFee.fee_type === 'security' ? 'Security Fee' : selectedFee.fee_type === 'hostel' ? 'Hostel Fee' : selectedFee.fee_type === 'mess' ? 'Mess Fee' : selectedFee.fee_type}</span></div>
+            <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span className="text-sm text-gray-500 dark:text-gray-400">Amount</span><span className="text-sm font-bold">RS {parseFloat(selectedFee.amount).toLocaleString()}</span></div>
+            <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span className="text-sm text-gray-500 dark:text-gray-400">Due Date</span><span className="text-sm font-medium">{new Date(selectedFee.due_date).toLocaleDateString()}</span></div>
+            <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span className="text-sm text-gray-500 dark:text-gray-400">Paid Date</span><span className="text-sm font-medium">{selectedFee.paid_date ? new Date(selectedFee.paid_date).toLocaleDateString() : '-'}</span></div>
+            <div className="flex justify-between py-2"><span className="text-sm text-gray-500 dark:text-gray-400">Status</span><span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(selectedFee.status)}`}>{selectedFee.status}</span></div>
+          </div>
+        )}
+      </MobileDetailModal>
     </div>
   )
 }

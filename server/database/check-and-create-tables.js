@@ -108,6 +108,22 @@ async function checkAndCreateTables() {
       } else {
         console.log('✅ hostel_id column exists');
       }
+
+      // Check if photo column exists in students and staff
+      const photoCheckStudents = await pool.query(`
+        SELECT column_name FROM information_schema.columns 
+        WHERE table_name = 'students' AND column_name = 'photo'
+      `);
+      const photoCheckStaff = await pool.query(`
+        SELECT column_name FROM information_schema.columns 
+        WHERE table_name = 'staff' AND column_name = 'photo'
+      `);
+      if (photoCheckStudents.rows.length === 0 || photoCheckStaff.rows.length === 0) {
+        console.log('⚠️  photo column missing. Adding photo columns...\n');
+        await pool.query('ALTER TABLE students ADD COLUMN IF NOT EXISTS photo TEXT');
+        await pool.query('ALTER TABLE staff ADD COLUMN IF NOT EXISTS photo TEXT');
+        console.log('✅ Photo columns added!\n');
+      }
     }
 
     // Verify all tables exist

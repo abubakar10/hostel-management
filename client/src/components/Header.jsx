@@ -1,27 +1,81 @@
 import { useAuth } from '../context/AuthContext'
+import { useHostel } from '../context/HostelContext'
 import { useTheme } from '../context/ThemeContext'
-import { Bell, LogOut, Menu, X, Sun, Moon } from 'lucide-react'
+import { Bell, LogOut, Menu, X, Sun, Moon, Building2, ChevronDown } from 'lucide-react'
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 const Header = ({ onMenuClick }) => {
   const { user, logout } = useAuth()
   const { theme, toggleTheme } = useTheme()
+  const { isSuperAdmin, selectedHostelId, setSelectedHostelId, hostels, selectedHostel } = useHostel()
   const [showNotifications, setShowNotifications] = useState(false)
   const [showUserMenu, setShowUserMenu] = useState(false)
+  const [showHostelDropdown, setShowHostelDropdown] = useState(false)
 
   return (
     <header className="bg-white dark:bg-gray-800 shadow-md sticky top-0 z-50 transition-colors duration-200">
       <div className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 flex items-center justify-between">
-        <div className="flex items-center gap-2 sm:gap-4">
+        <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
             <button
               onClick={onMenuClick}
-              className="lg:hidden p-2 text-gray-600 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors touch-manipulation rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 active:scale-95 min-w-[44px] min-h-[44px] flex items-center justify-center"
+              className="lg:hidden p-2 text-gray-600 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors touch-manipulation rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 active:scale-95 min-w-[44px] min-h-[44px] flex items-center justify-center flex-shrink-0"
               aria-label="Toggle menu"
             >
               <Menu size={24} />
             </button>
-          <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-primary-600 dark:text-primary-400">{user?.username || 'Admin'}</h1>
+          <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-primary-600 dark:text-primary-400 truncate">{user?.username || 'Admin'}</h1>
+          {isSuperAdmin && (
+            <div className="relative flex-shrink-0">
+              <button
+                onClick={() => setShowHostelDropdown(!showHostelDropdown)}
+                className={`flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg border transition-colors min-h-[36px] sm:min-h-[40px] ${
+                  selectedHostelId
+                    ? 'bg-primary-50 dark:bg-primary-900/20 border-primary-300 dark:border-primary-700 text-primary-700 dark:text-primary-300'
+                    : 'bg-amber-50 dark:bg-amber-900/20 border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-300'
+                }`}
+              >
+                <Building2 size={16} className="sm:w-4 sm:h-4 flex-shrink-0" />
+                <span className="text-xs sm:text-sm font-medium truncate max-w-[120px] sm:max-w-[160px]">
+                  {selectedHostel ? selectedHostel.name : 'Select Hostel'}
+                </span>
+                <ChevronDown size={14} className="flex-shrink-0" />
+              </button>
+              <AnimatePresence>
+                {showHostelDropdown && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setShowHostelDropdown(false)} />
+                    <motion.div
+                      initial={{ opacity: 0, y: -8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -8 }}
+                      className="absolute left-0 mt-1 w-56 max-h-64 overflow-y-auto bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 py-1 z-50"
+                    >
+                      {hostels.length === 0 ? (
+                        <div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">No hostels found</div>
+                      ) : (
+                        hostels.map(hostel => (
+                          <button
+                            key={hostel.id}
+                            onClick={() => {
+                              setSelectedHostelId(String(hostel.id))
+                              setShowHostelDropdown(false)
+                            }}
+                            className={`w-full px-4 py-2.5 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 ${
+                              selectedHostelId === String(hostel.id) ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 font-medium' : 'text-gray-700 dark:text-gray-300'
+                            }`}
+                          >
+                            <Building2 size={16} className="flex-shrink-0" />
+                            {hostel.name}
+                          </button>
+                        ))
+                      )}
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
+            </div>
+          )}
         </div>
 
         <div className="flex items-center gap-1.5 sm:gap-2 md:gap-4">

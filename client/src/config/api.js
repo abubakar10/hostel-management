@@ -23,13 +23,30 @@ const api = axios.create({
   },
 });
 
-// Add request interceptor to include auth token
+// Add request interceptor to include auth token and hostel filter for super admin
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
+    // For super_admin: add hostel_id to filter data by selected hostel
+    const userStr = localStorage.getItem('user');
+    const selectedHostelId = localStorage.getItem('selectedHostelId');
+    const url = config.url || '';
+    const excludePaths = ['/api/hostels', '/api/users', '/api/auth'];
+    const shouldExclude = excludePaths.some(p => url.includes(p));
+
+    if (userStr && selectedHostelId && !shouldExclude) {
+      try {
+        const user = JSON.parse(userStr);
+        if (user.role === 'super_admin') {
+          config.params = { ...config.params, hostel_id: selectedHostelId };
+        }
+      } catch (_) {}
+    }
+
     return config;
   },
   (error) => {

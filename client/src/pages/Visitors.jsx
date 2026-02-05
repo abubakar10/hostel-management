@@ -1,17 +1,22 @@
 import { useState, useEffect } from 'react'
 import api from '../config/api'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Edit, Search, X, LogIn, LogOut, Filter, User } from 'lucide-react'
+import { Plus, Edit, Trash2, Search, X, LogIn, LogOut, Filter, User, ChevronRight } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useNotification } from '../context/NotificationContext'
+import { useHostel } from '../context/HostelContext'
+import MobileDetailModal from '../components/MobileDetailModal'
 
 const Visitors = () => {
   const { user } = useAuth()
   const { showError, showSuccess, showConfirm } = useNotification()
+  const { selectedHostelId } = useHostel()
   const [visitors, setVisitors] = useState([])
   const [students, setStudents] = useState([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
+  const [showDetailModal, setShowDetailModal] = useState(false)
+  const [selectedVisitor, setSelectedVisitor] = useState(null)
   const [editingVisitor, setEditingVisitor] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
@@ -28,7 +33,7 @@ const Visitors = () => {
   useEffect(() => {
     fetchVisitors()
     fetchStudents()
-  }, [statusFilter])
+  }, [statusFilter, selectedHostelId])
 
   const fetchVisitors = async () => {
     try {
@@ -215,7 +220,7 @@ const Visitors = () => {
           </select>
         </div>
 
-        <div className="table-container w-full overflow-x-auto">
+        <div className="hidden lg:block table-container w-full overflow-x-auto">
           <table className="table w-full min-w-[800px]">
             <thead className="table-header">
               <tr>
@@ -307,7 +312,58 @@ const Visitors = () => {
             </div>
           )}
         </div>
+
+        {/* Mobile Card View */}
+        <div className="lg:hidden space-y-3">
+          {filteredVisitors.map((visitor, index) => (
+            <motion.div
+              key={visitor.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.03 }}
+              onClick={() => { setSelectedVisitor(visitor); setShowDetailModal(true) }}
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 border border-gray-200 dark:border-gray-700 cursor-pointer active:scale-[0.99] flex items-center justify-between gap-3"
+            >
+              <div className="flex-1 min-w-0">
+                <h3 className="font-bold text-gray-800 dark:text-gray-100 truncate">{visitor.visitor_name}</h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                  {visitor.student_first_name && visitor.student_last_name ? `${visitor.student_first_name} ${visitor.student_last_name}` : 'N/A'} • {visitor.relationship || '-'}
+                </p>
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${visitor.status === 'inside' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'}`}>{visitor.status || 'inside'}</span>
+                <ChevronRight size={20} className="text-gray-400" />
+              </div>
+            </motion.div>
+          ))}
+          {filteredVisitors.length === 0 && (
+            <div className="text-center py-8 text-gray-500">No visitors found</div>
+          )}
+        </div>
       </div>
+
+      <MobileDetailModal isOpen={showDetailModal && !!selectedVisitor} onClose={() => { setShowDetailModal(false); setSelectedVisitor(null) }} title={selectedVisitor?.visitor_name || 'Visitor Details'}>
+        {selectedVisitor && (
+          <div className="space-y-4">
+            <div className="grid gap-3">
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span className="text-sm text-gray-500 dark:text-gray-400">Visitor Name</span><span className="text-sm font-medium">{selectedVisitor.visitor_name}</span></div>
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span className="text-sm text-gray-500 dark:text-gray-400">Student</span><span className="text-sm font-medium">{selectedVisitor.student_first_name && selectedVisitor.student_last_name ? `${selectedVisitor.student_first_name} ${selectedVisitor.student_last_name}` : 'N/A'}</span></div>
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span className="text-sm text-gray-500 dark:text-gray-400">Phone</span><span className="text-sm font-medium">{selectedVisitor.visitor_phone || '-'}</span></div>
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span className="text-sm text-gray-500 dark:text-gray-400">ID Number</span><span className="text-sm font-medium">{selectedVisitor.visitor_id_number || '-'}</span></div>
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span className="text-sm text-gray-500 dark:text-gray-400">Relationship</span><span className="text-sm font-medium">{selectedVisitor.relationship || '-'}</span></div>
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span className="text-sm text-gray-500 dark:text-gray-400">Entry Time</span><span className="text-sm font-medium">{selectedVisitor.entry_time ? new Date(selectedVisitor.entry_time).toLocaleString() : '-'}</span></div>
+              <div className="flex justify-between py-2"><span className="text-sm text-gray-500 dark:text-gray-400">Exit Time</span><span className="text-sm font-medium">{selectedVisitor.exit_time ? new Date(selectedVisitor.exit_time).toLocaleString() : '-'}</span></div>
+            </div>
+            <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+              {selectedVisitor.status === 'inside' && (
+                <button onClick={() => { setShowDetailModal(false); handleCheckout(selectedVisitor.id) }} className="flex-1 flex items-center justify-center gap-2 py-3 bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 rounded-lg font-medium min-h-[48px]"><LogOut size={18} /><span>Check Out</span></button>
+              )}
+              <button onClick={() => { setShowDetailModal(false); handleEdit(selectedVisitor) }} className="flex-1 flex items-center justify-center gap-2 py-3 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg font-medium min-h-[48px]"><Edit size={18} /><span>Edit</span></button>
+              <button onClick={() => { setShowDetailModal(false); handleDelete(selectedVisitor.id) }} className="flex-1 flex items-center justify-center gap-2 py-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg font-medium min-h-[48px]"><Trash2 size={18} /><span>Delete</span></button>
+            </div>
+          </div>
+        )}
+      </MobileDetailModal>
 
       <AnimatePresence>
         {showModal && (

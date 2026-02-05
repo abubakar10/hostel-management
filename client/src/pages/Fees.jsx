@@ -1,17 +1,22 @@
 import { useState, useEffect } from 'react'
 import api from '../config/api'
 import { motion } from 'framer-motion'
-import { Plus, Search, DollarSign, CheckCircle, XCircle, FileText, Bell, X } from 'lucide-react'
+import { Plus, Search, DollarSign, CheckCircle, XCircle, FileText, Bell, X, ChevronRight } from 'lucide-react'
 import { useNotification } from '../context/NotificationContext'
+import { useHostel } from '../context/HostelContext'
+import MobileDetailModal from '../components/MobileDetailModal'
 
 const Fees = () => {
   const { showError, showSuccess, showConfirm } = useNotification()
+  const { selectedHostelId } = useHostel()
   const [fees, setFees] = useState([])
   const [students, setStudents] = useState([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [showReceiptModal, setShowReceiptModal] = useState(false)
   const [selectedReceipt, setSelectedReceipt] = useState(null)
+  const [showDetailModal, setShowDetailModal] = useState(false)
+  const [selectedFee, setSelectedFee] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [filter, setFilter] = useState('all')
   const [calculatedAmount, setCalculatedAmount] = useState(null)
@@ -27,7 +32,7 @@ const Fees = () => {
   useEffect(() => {
     fetchFees()
     fetchStudents()
-  }, [filter])
+  }, [filter, selectedHostelId])
 
   const fetchFees = async () => {
     try {
@@ -355,7 +360,7 @@ const Fees = () => {
               </table>
             </div>
 
-            {/* Mobile/Tablet Card View */}
+            {/* Mobile/Tablet Card View - Compact, tap for full details */}
             <div className="lg:hidden space-y-3 sm:space-y-4">
               {filteredFees.map((fee, index) => (
                 <motion.div
@@ -363,91 +368,26 @@ const Fees = () => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.03 }}
-                  className="bg-white dark:bg-gray-800 rounded-xl shadow-md dark:shadow-gray-900/50 p-4 sm:p-5 border border-gray-200 dark:border-gray-700 hover:shadow-lg dark:hover:shadow-gray-900/70 transition-all duration-200"
+                  onClick={() => { setSelectedFee(fee); setShowDetailModal(true) }}
+                  className="bg-white dark:bg-gray-800 rounded-xl shadow-md dark:shadow-gray-900/50 p-4 border border-gray-200 dark:border-gray-700 hover:shadow-lg dark:hover:shadow-gray-900/70 transition-all duration-200 cursor-pointer active:scale-[0.99] flex items-center justify-between gap-3"
                 >
-                  <div className="flex items-start justify-between mb-3 sm:mb-4">
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-100 truncate">
-                        {fee.first_name} {fee.last_name}
-                      </h3>
-                      <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-                        {fee.student_number || 'N/A'}
-                      </p>
-                    </div>
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium flex-shrink-0 ml-2 ${
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-base font-bold text-gray-800 dark:text-gray-100 truncate">
+                      {fee.first_name} {fee.last_name}
+                    </h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                      RS{parseFloat(fee.amount).toLocaleString()} • Due {new Date(fee.due_date).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                       fee.status === 'paid' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' :
                       fee.status === 'pending' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300' :
                       'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'
                     }`}>
                       {fee.status}
                     </span>
-                  </div>
-
-                  <div className="space-y-2 sm:space-y-2.5 mb-4 sm:mb-5">
-                    <div className="flex items-center gap-2 sm:gap-3">
-                      <span className="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400 min-w-[90px] sm:min-w-[100px]">
-                        Fee Type:
-                      </span>
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${
-                        fee.fee_type === 'hostel' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300' :
-                        fee.fee_type === 'mess' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' :
-                        fee.fee_type === 'security' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300' :
-                        fee.fee_type === 'fine' ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300' :
-                        'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
-                      }`}>
-                        {fee.fee_type === 'security' ? 'Security Fee' :
-                         fee.fee_type === 'fine' ? 'Fine' :
-                         fee.fee_type === 'hostel' ? 'Hostel Fee' :
-                         fee.fee_type === 'mess' ? 'Mess Fee' :
-                         fee.fee_type}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 sm:gap-3">
-                      <span className="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400 min-w-[90px] sm:min-w-[100px]">
-                        Amount:
-                      </span>
-                      <span className="text-sm sm:text-base font-bold text-gray-700 dark:text-gray-300">
-                        RS{parseFloat(fee.amount).toLocaleString()}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 sm:gap-3">
-                      <span className="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400 min-w-[90px] sm:min-w-[100px]">
-                        Due Date:
-                      </span>
-                      <span className="text-xs sm:text-sm text-gray-700 dark:text-gray-300">
-                        {new Date(fee.due_date).toLocaleDateString()}
-                      </span>
-                    </div>
-                    {fee.paid_date && (
-                      <div className="flex items-center gap-2 sm:gap-3">
-                        <span className="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400 min-w-[90px] sm:min-w-[100px]">
-                          Paid Date:
-                        </span>
-                        <span className="text-xs sm:text-sm text-gray-700 dark:text-gray-300">
-                          {new Date(fee.paid_date).toLocaleDateString()}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex gap-2 sm:gap-3 pt-3 sm:pt-4 border-t border-gray-200 dark:border-gray-700">
-                    {fee.status === 'paid' ? (
-                      <button
-                        onClick={() => viewReceipt(fee)}
-                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 sm:py-3 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg font-medium text-sm sm:text-base hover:bg-blue-100 dark:hover:bg-blue-900/30 active:scale-95 transition-all min-h-[44px] sm:min-h-[48px]"
-                      >
-                        <FileText size={18} className="sm:w-5 sm:h-5" />
-                        <span>View Receipt</span>
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => handleMarkPaid(fee)}
-                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 sm:py-3 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-lg font-medium text-sm sm:text-base hover:bg-green-100 dark:hover:bg-green-900/30 active:scale-95 transition-all min-h-[44px] sm:min-h-[48px]"
-                      >
-                        <CheckCircle size={18} className="sm:w-5 sm:h-5" />
-                        <span>Mark as Paid</span>
-                      </button>
-                    )}
+                    <ChevronRight size={20} className="text-gray-400" />
                   </div>
                 </motion.div>
               ))}
@@ -455,6 +395,33 @@ const Fees = () => {
           </>
         )}
       </div>
+
+      {/* Mobile Fee Detail Modal */}
+      <MobileDetailModal
+        isOpen={showDetailModal && !!selectedFee}
+        onClose={() => { setShowDetailModal(false); setSelectedFee(null) }}
+        title={selectedFee ? `${selectedFee.first_name} ${selectedFee.last_name}` : 'Fee Details'}
+      >
+        {selectedFee && (
+          <div className="space-y-4">
+            <div className="grid gap-3">
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span className="text-sm text-gray-500 dark:text-gray-400">Student ID</span><span className="text-sm font-medium">{selectedFee.student_number || 'N/A'}</span></div>
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span className="text-sm text-gray-500 dark:text-gray-400">Fee Type</span><span className="text-sm font-medium">{selectedFee.fee_type === 'security' ? 'Security Fee' : selectedFee.fee_type === 'fine' ? 'Fine' : selectedFee.fee_type === 'hostel' ? 'Hostel Fee' : selectedFee.fee_type === 'mess' ? 'Mess Fee' : selectedFee.fee_type}</span></div>
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span className="text-sm text-gray-500 dark:text-gray-400">Amount</span><span className="text-sm font-bold">RS{parseFloat(selectedFee.amount).toLocaleString()}</span></div>
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span className="text-sm text-gray-500 dark:text-gray-400">Due Date</span><span className="text-sm font-medium">{new Date(selectedFee.due_date).toLocaleDateString()}</span></div>
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span className="text-sm text-gray-500 dark:text-gray-400">Paid Date</span><span className="text-sm font-medium">{selectedFee.paid_date ? new Date(selectedFee.paid_date).toLocaleDateString() : '-'}</span></div>
+              <div className="flex justify-between py-2"><span className="text-sm text-gray-500 dark:text-gray-400">Status</span><span className={`px-2 py-1 rounded-full text-xs font-medium ${selectedFee.status === 'paid' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' : selectedFee.status === 'pending' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300' : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'}`}>{selectedFee.status}</span></div>
+            </div>
+            <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+              {selectedFee.status === 'paid' ? (
+                <button onClick={() => { setShowDetailModal(false); viewReceipt(selectedFee) }} className="flex-1 flex items-center justify-center gap-2 py-3 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg font-medium min-h-[48px]"><FileText size={18} /><span>View Receipt</span></button>
+              ) : (
+                <button onClick={() => { setShowDetailModal(false); handleMarkPaid(selectedFee) }} className="flex-1 flex items-center justify-center gap-2 py-3 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-lg font-medium min-h-[48px]"><CheckCircle size={18} /><span>Mark as Paid</span></button>
+              )}
+            </div>
+          </div>
+        )}
+      </MobileDetailModal>
 
       {showModal && (
         <motion.div
