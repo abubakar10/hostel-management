@@ -32,7 +32,7 @@ router.get('/', authenticateToken, setHostelContext, async (req, res) => {
       params.push(req.query.status);
     }
 
-    query += ' ORDER BY t.created_at DESC';
+    query += ' ORDER BY t.status ASC, t.created_at DESC'; // Show pending requests first
 
     const result = await pool.query(query, params);
     res.json(result.rows);
@@ -118,8 +118,41 @@ router.put('/:id', authenticateToken, async (req, res) => {
 
     const transferData = transfer.rows[0];
 
-    // If approving, update room occupancy and status
+    // Check if request is already processed
+    if (transferData.status !== 'pending') {
+      return res.status(400).json({ error: `This transfer request has already been ${transferData.status}` });
+    }
+
+    // If approving, validate and update room occupancy and status
     if (status === 'approved') {
+      // Validate that destination room still has space
+      const roomCheck = await pool.query(
+        'SELECT capacity, current_occupancy, status FROM rooms WHERE id = $1',
+        [transferData.to_room_id]
+      );
+
+      if (roomCheck.rows.length === 0) {
+        return res.status(404).json({ error: 'Destination room not found' });
+      }
+
+      const room = roomCheck.rows[0];
+      
+      // Check if room is in maintenance
+      if (room.status === 'maintenance') {
+        return res.status(400).json({ error: 'Cannot transfer to a room under maintenance' });
+      }
+
+      // Check if room still has space (accounting for current student if they're already in the room)
+      const currentOccupancy = parseInt(room.current_occupancy || 0);
+      const capacity = parseInt(room.capacity || 0);
+      
+      // If student is moving from another room, we need to account for that
+      // The room occupancy will decrease by 1 when student leaves from_room
+      // But we need to check if to_room can accommodate the student
+      if (currentOccupancy >= capacity) {
+        return res.status(400).json({ error: 'Destination room is now full. Cannot approve transfer.' });
+      }
+
       // Update student's room_id
       await pool.query(
         'UPDATE students SET room_id = $1 WHERE id = $2',

@@ -2,10 +2,10 @@ import { useState, useEffect } from 'react'
 import api from '../config/api'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, Edit, Trash2, Search, X, ChevronRight, User } from 'lucide-react'
-import { compressImageToBase64 } from '../utils/imageUtils'
 import { useAuth } from '../context/AuthContext'
 import { useHostel } from '../context/HostelContext'
 import { useNotification } from '../context/NotificationContext'
+import { compressImageToBase64 } from '../utils/imageUtils'
 import MobileDetailModal from '../components/MobileDetailModal'
 
 const DetailRow = ({ label, value }) => (
@@ -379,13 +379,13 @@ const Students = () => {
                         </div>
                       )}
                       <div className="flex-1 min-w-0">
-                      <h3 className="text-base font-bold text-gray-800 dark:text-gray-100 truncate">
-                        {student.first_name} {student.last_name}
-                      </h3>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                        ID: {student.student_id} • {student.room_number || 'No room'}
-                      </p>
-                    </div>
+                        <h3 className="text-base font-bold text-gray-800 dark:text-gray-100 truncate">
+                          {student.first_name} {student.last_name}
+                        </h3>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                          ID: {student.student_id} • {student.room_number || 'No room'}
+                        </p>
+                      </div>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${

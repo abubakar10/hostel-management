@@ -5,23 +5,31 @@ import { setHostelContext } from '../middleware/hostel.js';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import { uploadToSupabase, deleteFromSupabase, getSupabaseFileUrl, downloadFromSupabase, supabaseClient } from '../config/storage.js';
 
 const router = express.Router();
 
+// Check if we're using Supabase Storage (when configured) or local filesystem (development)
+// Use Supabase if client is initialized, otherwise fall back to filesystem
+const useSupabaseStorage = !!supabaseClient;
+
 // Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadDir = 'uploads/documents';
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
+// Use memory storage for Supabase (we need the buffer), disk storage for local development
+const storage = useSupabaseStorage 
+  ? multer.memoryStorage()
+  : multer.diskStorage({
+      destination: (req, file, cb) => {
+        const uploadDir = 'uploads/documents';
+        if (!fs.existsSync(uploadDir)) {
+          fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        cb(null, uploadDir);
+      },
+      filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+      }
+    });
 
 const upload = multer({
   storage: storage,
@@ -102,6 +110,9 @@ router.get('/:id', authenticateToken, async (req, res) => {
 
 // Upload document
 router.post('/', authenticateToken, setHostelContext, upload.single('file'), async (req, res) => {
+  let uploadedFilePath = null;
+  let uploadedFileUrl = null;
+
   try {
     // Handle multer errors
     if (req.fileValidationError) {
@@ -118,40 +129,37 @@ router.post('/', authenticateToken, setHostelContext, upload.single('file'), asy
 
     // Validate required fields
     if (!student_id || student_id.toString().trim() === '') {
-      // Delete uploaded file if validation fails
-      if (req.file && fs.existsSync(req.file.path)) {
-        fs.unlinkSync(req.file.path);
-      }
       return res.status(400).json({ error: 'Please select a student' });
     }
 
     if (!document_type || document_type.toString().trim() === '') {
-      // Delete uploaded file if validation fails
-      if (req.file && fs.existsSync(req.file.path)) {
-        fs.unlinkSync(req.file.path);
-      }
       return res.status(400).json({ error: 'Document type is required' });
     }
 
     // Validate student exists
     const studentCheck = await pool.query('SELECT id, hostel_id FROM students WHERE id = $1', [student_id]);
     if (studentCheck.rows.length === 0) {
-      // Delete uploaded file if student doesn't exist
-      if (req.file && fs.existsSync(req.file.path)) {
-        fs.unlinkSync(req.file.path);
-      }
       return res.status(400).json({ error: 'Selected student does not exist. Please select a valid student.' });
     }
 
     const finalHostelId = hostel_id || req.hostelId || studentCheck.rows[0].hostel_id;
     if (!finalHostelId) {
-      // Delete uploaded file if hostel_id is missing
-      if (req.file && fs.existsSync(req.file.path)) {
-        fs.unlinkSync(req.file.path);
-      }
       return res.status(400).json({ error: 'Hostel ID is required' });
     }
 
+    // Upload file to storage (Supabase in production, filesystem in development)
+    if (useSupabaseStorage) {
+      // Upload to Supabase Storage
+      const uploadResult = await uploadToSupabase(req.file);
+      uploadedFilePath = uploadResult.path;
+      uploadedFileUrl = uploadResult.url;
+    } else {
+      // Use local filesystem (development only)
+      uploadedFilePath = req.file.path;
+      uploadedFileUrl = null; // Local files don't have URLs
+    }
+
+    // Store in database
     const result = await pool.query(
       `INSERT INTO documents (student_id, document_type, file_name, file_path,
        file_size, mime_type, uploaded_by, hostel_id)
@@ -160,7 +168,7 @@ router.post('/', authenticateToken, setHostelContext, upload.single('file'), asy
         student_id,
         document_type,
         req.file.originalname,
-        req.file.path,
+        uploadedFilePath, // Store path or Supabase path
         req.file.size,
         req.file.mimetype,
         req.user.id,
@@ -168,14 +176,24 @@ router.post('/', authenticateToken, setHostelContext, upload.single('file'), asy
       ]
     );
 
-    res.status(201).json(result.rows[0]);
+    // Add file URL to response if using Supabase
+    const responseData = { ...result.rows[0] };
+    if (uploadedFileUrl) {
+      responseData.file_url = uploadedFileUrl;
+    }
+
+    res.status(201).json(responseData);
   } catch (error) {
-    // Delete uploaded file on error
-    if (req.file && fs.existsSync(req.file.path)) {
+    // Clean up uploaded file on error
+    if (uploadedFilePath) {
       try {
-        fs.unlinkSync(req.file.path);
-      } catch (unlinkError) {
-        console.error('Error deleting uploaded file:', unlinkError);
+        if (useSupabaseStorage) {
+          await deleteFromSupabase(uploadedFilePath);
+        } else if (fs.existsSync(uploadedFilePath)) {
+          fs.unlinkSync(uploadedFilePath);
+        }
+      } catch (cleanupError) {
+        console.error('Error cleaning up uploaded file:', cleanupError);
       }
     }
     
@@ -184,6 +202,7 @@ router.post('/', authenticateToken, setHostelContext, upload.single('file'), asy
       return res.status(400).json({ error: 'File size exceeds the maximum limit of 10MB' });
     }
     
+    console.error('Document upload error:', error);
     res.status(500).json({ error: error.message || 'Error uploading document. Please try again.' });
   }
 });
@@ -200,12 +219,34 @@ router.get('/:id/download', authenticateToken, async (req, res) => {
     const document = result.rows[0];
     const filePath = document.file_path;
 
-    if (!fs.existsSync(filePath)) {
-      return res.status(404).json({ error: 'File not found on server' });
+    // Check if file is stored in Supabase Storage
+    // Files stored in Supabase will have path starting with "documents/"
+    // or we're using Supabase Storage in production
+    if (filePath && (filePath.startsWith('documents/') || useSupabaseStorage)) {
+      try {
+        // Download file from Supabase Storage
+        const fileBuffer = await downloadFromSupabase(filePath);
+        
+        // Set appropriate headers
+        res.setHeader('Content-Type', document.mime_type || 'application/octet-stream');
+        res.setHeader('Content-Disposition', `attachment; filename="${document.file_name}"`);
+        res.setHeader('Content-Length', fileBuffer.length);
+        
+        // Send the file buffer
+        res.send(fileBuffer);
+      } catch (error) {
+        console.error('Error downloading from Supabase:', error);
+        return res.status(404).json({ error: 'File not found in storage' });
+      }
+    } else {
+      // Local filesystem (development or old files)
+      if (!filePath || !fs.existsSync(filePath)) {
+        return res.status(404).json({ error: 'File not found on server' });
+      }
+      res.download(filePath, document.file_name);
     }
-
-    res.download(filePath, document.file_name);
   } catch (error) {
+    console.error('Document download error:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -221,19 +262,34 @@ router.delete('/:id', authenticateToken, async (req, res) => {
 
     const filePath = result.rows[0].file_path;
     
-    // Delete from database
+    // Delete from database first
     await pool.query('DELETE FROM documents WHERE id = $1', [req.params.id]);
     
-    // Delete file from filesystem
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
+    // Delete file from storage
+    if (filePath) {
+      try {
+        if (filePath.startsWith('documents/') || useSupabaseStorage) {
+          // Delete from Supabase Storage
+          await deleteFromSupabase(filePath);
+        } else {
+          // Delete from local filesystem (development or old files)
+          if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+          }
+        }
+      } catch (deleteError) {
+        console.error('Error deleting file from storage:', deleteError);
+        // Continue even if file deletion fails (file might already be deleted)
+      }
     }
 
     res.json({ message: 'Document deleted successfully' });
   } catch (error) {
+    console.error('Document delete error:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
 export default router;
+
 
