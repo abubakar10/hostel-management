@@ -3,6 +3,7 @@ import { pool } from '../config/database.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { setHostelContext } from '../middleware/hostel.js';
 import { checkEmailExists, isValidEmailFormat } from '../utils/emailValidation.js';
+import { ensurePhotoColumnExists } from '../utils/databaseMigration.js';
 
 const router = express.Router();
 
@@ -56,6 +57,16 @@ router.get('/:id', authenticateToken, async (req, res) => {
 // Create student
 router.post('/', authenticateToken, setHostelContext, async (req, res) => {
   try {
+    // Ensure photo column exists
+    try {
+      await ensurePhotoColumnExists();
+    } catch (migrationError) {
+      console.error('Migration error:', migrationError);
+      return res.status(500).json({ 
+        error: 'Database migration failed. Please contact the administrator or restart the server.' 
+      });
+    }
+    
     const {
       student_id, first_name, last_name, email, phone, address,
       date_of_birth, gender, resident_type, course, year_of_study, room_id, status, hostel_id, photo
@@ -129,6 +140,13 @@ router.post('/', authenticateToken, setHostelContext, async (req, res) => {
     if (error.code === '23505') {
       return res.status(400).json({ error: 'Student ID or email already exists' });
     }
+    // Handle missing column error
+    if (error.message && error.message.includes('column') && error.message.includes('does not exist')) {
+      console.error('Database column error:', error.message);
+      return res.status(500).json({ 
+        error: 'Database schema error. The photo column is missing. Please restart the server to run migrations.' 
+      });
+    }
     // Handle date-related errors with user-friendly messages
     if (error.message && error.message.includes('date')) {
       return res.status(400).json({ 
@@ -146,6 +164,16 @@ router.post('/', authenticateToken, setHostelContext, async (req, res) => {
 // Update student
 router.put('/:id', authenticateToken, async (req, res) => {
   try {
+    // Ensure photo column exists
+    try {
+      await ensurePhotoColumnExists();
+    } catch (migrationError) {
+      console.error('Migration error:', migrationError);
+      return res.status(500).json({ 
+        error: 'Database migration failed. Please contact the administrator or restart the server.' 
+      });
+    }
+    
     const {
       first_name, last_name, email, phone, address,
       date_of_birth, gender, resident_type, course, year_of_study, room_id, status, photo
@@ -256,6 +284,13 @@ router.put('/:id', authenticateToken, async (req, res) => {
   } catch (error) {
     if (error.code === '23505') {
       return res.status(400).json({ error: 'Student ID or email already exists' });
+    }
+    // Handle missing column error
+    if (error.message && error.message.includes('column') && error.message.includes('does not exist')) {
+      console.error('Database column error:', error.message);
+      return res.status(500).json({ 
+        error: 'Database schema error. The photo column is missing. Please restart the server to run migrations.' 
+      });
     }
     // Handle date-related errors with user-friendly messages
     if (error.message && error.message.includes('date')) {

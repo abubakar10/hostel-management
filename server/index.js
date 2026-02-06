@@ -147,6 +147,10 @@ const initializeDatabase = async () => {
     if (!usersTable.rows[0].exists) {
       console.warn('⚠️  Warning: users table not found. Run SUPABASE_SQL_SETUP.sql in Supabase SQL Editor.');
     }
+    
+    // Ensure photo column exists in students and staff tables
+    const { ensurePhotoColumnExists } = await import('./utils/databaseMigration.js');
+    await ensurePhotoColumnExists();
   } catch (error) {
     console.error('❌ Database connection error:', error.message);
     console.error('   Error code:', error.code);

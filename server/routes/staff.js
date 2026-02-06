@@ -2,6 +2,7 @@ import express from 'express';
 import { pool } from '../config/database.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { setHostelContext } from '../middleware/hostel.js';
+import { ensurePhotoColumnExists } from '../utils/databaseMigration.js';
 
 const router = express.Router();
 
@@ -67,6 +68,9 @@ router.get('/role/:role', authenticateToken, async (req, res) => {
 // Create staff
 router.post('/', authenticateToken, setHostelContext, async (req, res) => {
   try {
+    // Ensure photo column exists
+    await ensurePhotoColumnExists();
+    
     const {
       staff_id, first_name, last_name, email, phone, role, shift, salary, hire_date, status, hostel_id, photo
     } = req.body;
@@ -127,6 +131,9 @@ router.post('/', authenticateToken, setHostelContext, async (req, res) => {
 // Update staff
 router.put('/:id', authenticateToken, async (req, res) => {
   try {
+    // Ensure photo column exists
+    await ensurePhotoColumnExists();
+    
     const {
       first_name, last_name, email, phone, role, shift, salary, hire_date, status, photo
     } = req.body;
