@@ -77,7 +77,7 @@ const StudentLeaves = () => {
     <div className="space-y-4 sm:space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-gray-100 mb-1 sm:mb-2">My Leaves</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-gray-100 mb-1 sm:mb-2">My leave</h1>
           <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">Apply for leave and track your requests</p>
         </div>
         <button

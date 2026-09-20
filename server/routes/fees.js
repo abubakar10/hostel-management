@@ -1,7 +1,7 @@
 import express from 'express';
 import { pool } from '../config/database.js';
 import { authenticateToken } from '../middleware/auth.js';
-import { setHostelContext } from '../middleware/hostel.js';
+import { setHostelContext, requireHostelRecord } from '../middleware/hostel.js';
 
 const router = express.Router();
 
@@ -103,7 +103,7 @@ router.get('/calculate/:student_id', authenticateToken, async (req, res) => {
 });
 
 // Get fee by ID
-router.get('/:id', authenticateToken, async (req, res) => {
+router.get('/:id', authenticateToken, requireHostelRecord('fees'), async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT f.*, s.first_name, s.last_name, s.student_id as student_number
@@ -182,7 +182,7 @@ router.post('/', authenticateToken, setHostelContext, async (req, res) => {
 });
 
 // Update fee (mark as paid)
-router.put('/:id', authenticateToken, async (req, res) => {
+router.put('/:id', authenticateToken, requireHostelRecord('fees'), async (req, res) => {
   try {
     const { status, paid_date, payment_method } = req.body;
 
@@ -292,28 +292,25 @@ router.post('/reminders/send', authenticateToken, setHostelContext, async (req, 
 
     const overdueFees = await pool.query(query, params);
 
-    // Create notifications for each overdue fee
+    try {
+      await pool.query('ALTER TABLE notifications ADD COLUMN IF NOT EXISTS student_id INTEGER');
+    } catch (_) {}
+
     const notifications = [];
     for (const fee of overdueFees.rows) {
-      // Get student's user account if exists
-      const userResult = await pool.query(
-        'SELECT id FROM users WHERE email = $1',
-        [fee.email]
+      const notification = await pool.query(
+        `INSERT INTO notifications (user_id, student_id, hostel_id, title, message, type, related_module, is_read)
+         VALUES ($1, $2, $3, $4, $5, 'reminder', 'fees', false)
+         RETURNING id`,
+        [
+          req.user.id,
+          fee.student_id,
+          fee.hostel_id || req.hostelId,
+          'Payment reminder',
+          `A ${fee.fee_type} payment of RS ${fee.amount} for ${fee.first_name} ${fee.last_name} was due on ${new Date(fee.due_date).toLocaleDateString()}. Please pay at the hostel office.`
+        ]
       );
-
-      if (userResult.rows.length > 0) {
-        const notification = await pool.query(
-          `INSERT INTO notifications (user_id, title, message, type, related_module, is_read)
-           VALUES ($1, $2, $3, 'reminder', 'fees', false)
-           RETURNING *`,
-          [
-            userResult.rows[0].id,
-            'Payment Reminder',
-            `Your ${fee.fee_type} fee of RS ${fee.amount} was due on ${new Date(fee.due_date).toLocaleDateString()}. Please make payment as soon as possible.`
-          ]
-        );
-        notifications.push(notification.rows[0]);
-      }
+      notifications.push(notification.rows[0]);
     }
 
     res.json({

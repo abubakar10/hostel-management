@@ -6,14 +6,21 @@ const PrivateRoute = ({ children }) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-cream dark:bg-slate-900">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
       </div>
     )
   }
 
-  return user ? children : <Navigate to="/login" replace />
+  if (!user) {
+    return <Navigate to="/login" replace />
+  }
+
+  if (user.role === 'student') {
+    return <Navigate to="/student/dashboard" replace />
+  }
+
+  return children
 }
 
 export default PrivateRoute
-

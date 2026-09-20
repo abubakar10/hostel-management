@@ -1,7 +1,7 @@
 import express from 'express';
 import { pool } from '../config/database.js';
 import { authenticateToken } from '../middleware/auth.js';
-import { setHostelContext } from '../middleware/hostel.js';
+import { setHostelContext, requireHostelRecord } from '../middleware/hostel.js';
 
 const router = express.Router();
 
@@ -42,7 +42,7 @@ router.get('/', authenticateToken, setHostelContext, async (req, res) => {
 });
 
 // Get transfer request by ID
-router.get('/:id', authenticateToken, async (req, res) => {
+router.get('/:id', authenticateToken, requireHostelRecord('room_transfers'), async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT t.*, s.first_name as student_first_name, s.last_name as student_last_name,
@@ -105,7 +105,7 @@ router.post('/', authenticateToken, setHostelContext, async (req, res) => {
 });
 
 // Update transfer request (approve/reject)
-router.put('/:id', authenticateToken, async (req, res) => {
+router.put('/:id', authenticateToken, requireHostelRecord('room_transfers'), async (req, res) => {
   try {
     const { status, transfer_date } = req.body;
 
@@ -223,7 +223,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
 });
 
 // Delete transfer request
-router.delete('/:id', authenticateToken, async (req, res) => {
+router.delete('/:id', authenticateToken, requireHostelRecord('room_transfers'), async (req, res) => {
   try {
     await pool.query('DELETE FROM room_transfers WHERE id = $1', [req.params.id]);
     res.json({ message: 'Transfer request deleted successfully' });

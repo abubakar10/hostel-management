@@ -196,10 +196,10 @@ const Fees = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
         <div className="w-full sm:w-auto">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-gray-100 mb-1 sm:mb-2">
-            Fee Management
+            Payments
           </h1>
           <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
-            Manage hostel and mess fees
+            Add bills and mark them paid when money is collected at the office
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">

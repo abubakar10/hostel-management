@@ -47,11 +47,12 @@ router.get('/unread/count', authenticateToken, async (req, res) => {
 router.post('/', authenticateToken, async (req, res) => {
   try {
     const { user_id, title, message, type, related_module } = req.body;
+    const targetUserId = req.user.role === 'super_admin' && user_id ? user_id : req.user.id;
 
     const result = await pool.query(
       `INSERT INTO notifications (user_id, title, message, type, related_module)
        VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-      [user_id || req.user.id, title, message, type, related_module]
+      [targetUserId, title, message, type, related_module]
     );
 
     res.status(201).json(result.rows[0]);

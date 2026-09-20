@@ -89,7 +89,7 @@ const ResetPassword = () => {
 
   if (validating) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-primary-500 to-primary-700 dark:from-primary-600 dark:to-primary-800 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-cream dark:bg-slate-900 flex items-center justify-center p-4">
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 w-full max-w-md text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 dark:border-primary-400 mx-auto mb-4"></div>
           <p className="text-gray-600 dark:text-gray-400">Validating reset token...</p>
@@ -100,7 +100,7 @@ const ResetPassword = () => {
 
   if (!tokenValid) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-primary-500 to-primary-700 dark:from-primary-600 dark:to-primary-800 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-cream dark:bg-slate-900 flex items-center justify-center p-4">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -129,7 +129,7 @@ const ResetPassword = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-500 to-primary-700 dark:from-primary-600 dark:to-primary-800 flex items-center justify-center p-4 transition-colors duration-200">
+    <div className="min-h-screen bg-cream dark:bg-slate-900 flex items-center justify-center p-4 transition-colors duration-200">
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}

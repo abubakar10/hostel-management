@@ -1,0 +1,30 @@
+{
+  "expo": {
+    "name": "Hostel office",
+    "slug": "hostel-office",
+    "owner": "abubakar10",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#f6f4ef"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.hostel.office"
+    },
+    "android": {
+      "package": "com.hostel.office",
+      "adaptiveIcon": {
+        "backgroundColor": "#0f766e",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    }
+  }
+}

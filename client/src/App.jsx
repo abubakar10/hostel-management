@@ -36,6 +36,7 @@ import StudentLeaves from './pages/student/StudentLeaves'
 import StudentAttendance from './pages/student/StudentAttendance'
 import StudentRoomTransfers from './pages/student/StudentRoomTransfers'
 import StudentNotifications from './pages/student/StudentNotifications'
+import PWAInstallPrompt from './components/PWAInstallPrompt'
 
 function App() {
   return (
@@ -98,6 +99,7 @@ function App() {
           </Route>
         </Routes>
       </Router>
+      <PWAInstallPrompt />
       </NotificationProvider>
         </HostelProvider>
     </AuthProvider>

@@ -192,9 +192,9 @@ const Documents = () => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">Document Management</h1>
+          <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">Files</h1>
           <p className="text-gray-600 dark:text-gray-400">
-            View all documents • Upload documents when adding/editing students
+            Keep ID cards, forms, and photos in one place
           </p>
         </div>
         <button

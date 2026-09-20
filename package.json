@@ -12,7 +12,8 @@
     "server": "cd server && npm run dev",
     "client": "cd client && npm run dev",
     "build": "cd client && npm run build",
-    "install-all": "npm install && cd server && npm install && cd ../client && npm install"
+    "mobile": "cd mobile && npm start",
+    "install-all": "npm install && cd server && npm install && cd ../client && npm install && cd ../mobile && npm install"
   },
   "keywords": ["hostel", "management", "system"],
   "author": "",

@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Hostel Management System — Demo Guide</title>
+  <style>
+    @page { size: A4; margin: 0; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #1e293b; line-height: 1.45; }
+
+    .page {
+      width: 210mm;
+      height: 297mm;
+      padding: 14mm 16mm;
+      page-break-after: always;
+      position: relative;
+      overflow: hidden;
+    }
+    .page:last-child { page-break-after: auto; }
+
+    /* Page 1 — Cover */
+    .cover {
+      background: linear-gradient(145deg, #1e3a8a 0%, #2563eb 45%, #3b82f6 100%);
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 20mm 18mm;
+    }
+    .cover-badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.18);
+      border: 1px solid rgba(255,255,255,0.35);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 10px;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      margin-bottom: 18px;
+      width: fit-content;
+    }
+    .cover h1 {
+      font-size: 36px;
+      font-weight: 700;
+      line-height: 1.15;
+      margin-bottom: 12px;
+    }
+    .cover .subtitle {
+      font-size: 16px;
+      opacity: 0.92;
+      max-width: 420px;
+      margin-bottom: 28px;
+    }
+    .cover-highlights {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 8px;
+    }
+    .cover-card {
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.22);
+      border-radius: 10px;
+      padding: 14px 16px;
+    }
+    .cover-card h3 { font-size: 13px; margin-bottom: 6px; }
+    .cover-card p { font-size: 11px; opacity: 0.88; }
+    .cover-footer {
+      position: absolute;
+      bottom: 16mm;
+      left: 18mm;
+      right: 18mm;
+      border-top: 1px solid rgba(255,255,255,0.25);
+      padding-top: 12px;
+      font-size: 10px;
+      opacity: 0.85;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    /* Inner pages */
+    .inner { background: #fff; }
+    .page-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 3px solid #2563eb;
+      padding-bottom: 8px;
+      margin-bottom: 14px;
+    }
+    .page-header h2 { font-size: 20px; color: #1e3a8a; }
+    .page-header .page-num { font-size: 11px; color: #64748b; }
+    .role-banner {
+      background: #eff6ff;
+      border-left: 4px solid #2563eb;
+      padding: 10px 14px;
+      margin-bottom: 14px;
+      border-radius: 0 8px 8px 0;
+    }
+    .role-banner.manager { background: #f0fdf4; border-color: #16a34a; }
+    .role-banner h3 { font-size: 13px; color: #1e3a8a; margin-bottom: 2px; }
+    .role-banner.manager h3 { color: #166534; }
+    .role-banner p { font-size: 10.5px; color: #475569; }
+
+    .section { margin-bottom: 12px; }
+    .section-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #2563eb;
+      margin-bottom: 7px;
+      padding-bottom: 3px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .section-title.green { color: #16a34a; }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .feature-item {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 8px 10px;
+    }
+    .feature-item h4 { font-size: 10.5px; color: #0f172a; margin-bottom: 2px; }
+    .feature-item p { font-size: 9.5px; color: #64748b; }
+
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .compare-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 9px;
+      margin-top: 6px;
+    }
+    .compare-table th {
+      background: #1e3a8a;
+      color: #fff;
+      padding: 6px 8px;
+      text-align: left;
+    }
+    .compare-table td {
+      padding: 5px 8px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .compare-table tr:nth-child(even) td { background: #f8fafc; }
+    .check { color: #16a34a; font-weight: bold; }
+    .dash { color: #94a3b8; }
+
+    .footer-note {
+      position: absolute;
+      bottom: 12mm;
+      left: 16mm;
+      right: 16mm;
+      font-size: 9px;
+      color: #94a3b8;
+      border-top: 1px solid #e2e8f0;
+      padding-top: 8px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .benefits-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .benefit-box {
+      text-align: center;
+      background: #eff6ff;
+      border-radius: 8px;
+      padding: 10px 6px;
+    }
+    .benefit-box .icon { font-size: 18px; margin-bottom: 4px; }
+    .benefit-box h4 { font-size: 9.5px; color: #1e3a8a; margin-bottom: 2px; }
+    .benefit-box p { font-size: 8.5px; color: #64748b; }
+
+    .compact-list { list-style: none; }
+    .compact-list li {
+      font-size: 9.5px;
+      color: #475569;
+      padding: 3px 0 3px 14px;
+      position: relative;
+    }
+    .compact-list li::before {
+      content: "✓";
+      position: absolute;
+      left: 0;
+      color: #2563eb;
+      font-weight: bold;
+      font-size: 9px;
+    }
+    .compact-list.green li::before { color: #16a34a; }
+  </style>
+</head>
+<body>
+
+<!-- PAGE 1: COVER -->
+<div class="page cover">
+  <div class="cover-badge">Product Demo Guide</div>
+  <h1>Hostel Management System</h1>
+  <p class="subtitle">
+    A complete digital platform for hostel residents and managers — manage rooms, fees, attendance, mess, complaints, and more from one place.
+  </p>
+
+  <div class="cover-highlights">
+    <div class="cover-card">
+      <h3>👤 For Residents (Clients)</h3>
+      <p>Self-service portal to view fees, attendance, submit complaints, apply for leave, and request room transfers — anytime, on any device.</p>
+    </div>
+    <div class="cover-card">
+      <h3>🏢 For Hostel Managers</h3>
+      <p>Full admin dashboard to manage students, rooms, finances, staff, visitors, mess, maintenance, inventory, and reports.</p>
+    </div>
+    <div class="cover-card">
+      <h3>📱 Progressive Web App</h3>
+      <p>Install on phone or desktop like a native app. Responsive design works on mobile, tablet, and computer.</p>
+    </div>
+    <div class="cover-card">
+      <h3>🔐 Secure Role-Based Access</h3>
+      <p>One login page — students and admins are routed automatically. Each user sees only what they are allowed to access.</p>
+    </div>
+  </div>
+
+  <div class="benefits-row">
+    <div class="benefit-box"><div class="icon">📊</div><h4>Real-Time Dashboard</h4><p>Live KPIs &amp; trends</p></div>
+    <div class="benefit-box"><div class="icon">💰</div><h4>Fee Management</h4><p>Track &amp; collect fees</p></div>
+    <div class="benefit-box"><div class="icon">🛏️</div><h4>Room Allocation</h4><p>Occupancy tracking</p></div>
+    <div class="benefit-box"><div class="icon">📋</div><h4>Reports &amp; Analytics</h4><p>Profit &amp; loss charts</p></div>
+  </div>
+
+  <div class="cover-footer">
+    <span>Hostel Management System — Demo Overview</span>
+    <span>Page 1 of 3</span>
+  </div>
+</div>
+
+<!-- PAGE 2: CLIENT / STUDENT PORTAL -->
+<div class="page inner">
+  <div class="page-header">
+    <h2>Resident (Client) Portal</h2>
+    <span class="page-num">Page 2 of 3</span>
+  </div>
+
+  <div class="role-banner">
+    <h3>Who is this for?</h3>
+    <p>Students and hostel residents who live in the hostel. They log in with their Student ID or email and access a personal dashboard tailored to their stay.</p>
+  </div>
+
+  <div class="two-col">
+    <div>
+      <div class="section">
+        <div class="section-title">Dashboard &amp; Profile</div>
+        <div class="feature-grid">
+          <div class="feature-item">
+            <h4>Personal Dashboard</h4>
+            <p>At-a-glance view of pending fees, attendance rate, active complaints, and pending leave requests.</p>
+          </div>
+          <div class="feature-item">
+            <h4>Quick Actions</h4>
+            <p>One-click shortcuts to submit a complaint, apply for leave, request a room transfer, or view profile.</p>
+          </div>
+          <div class="feature-item">
+            <h4>My Profile</h4>
+            <p>View personal details — name, ID, contact, course, room assignment, hostel name, and resident status.</p>
+          </div>
+          <div class="feature-item">
+            <h4>Notifications</h4>
+            <p>Receive alerts about fee reminders, leave decisions, complaint updates, and hostel announcements.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Fees &amp; Attendance</div>
+        <div class="feature-grid">
+          <div class="feature-item">
+            <h4>Fee Summary</h4>
+            <p>See total, paid, and pending fee amounts at a glance.</p>
+          </div>
+          <div class="feature-item">
+            <h4>Fee History</h4>
+            <p>Full list of hostel, mess, security, and fine charges with due dates, payment dates, and status.</p>
+          </div>
+          <div class="feature-item">
+            <h4>Attendance Stats</h4>
+            <p>View total days, present/absent counts, and overall attendance percentage.</p>
+          </div>
+          <div class="feature-item">
+            <h4>Attendance Log</h4>
+            <p>Filter daily records by date range — see present, absent, or late status with remarks.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="section">
+        <div class="section-title">Requests &amp; Complaints</div>
+        <div class="feature-grid">
+          <div class="feature-item">
+            <h4>Submit Complaints</h4>
+            <p>Report maintenance, cleanliness, security, or other issues with title, description, category, and priority level.</p>
+          </div>
+          <div class="feature-item">
+            <h4>Track Complaints</h4>
+            <p>Monitor status (open → in progress → resolved) and read admin resolution notes.</p>
+          </div>
+          <div class="feature-item">
+            <h4>Apply for Leave</h4>
+            <p>Request vacation, emergency, or weekend leave with dates, reason, and emergency contact.</p>
+          </div>
+          <div class="feature-item">
+            <h4>Leave Status</h4>
+            <p>See whether leave is pending, approved, or rejected — with admin remarks.</p>
+          </div>
+          <div class="feature-item">
+            <h4>Room Transfer Request</h4>
+            <p>Browse available rooms in the same hostel and submit a transfer request with a reason.</p>
+          </div>
+          <div class="feature-item">
+            <h4>Transfer Tracking</h4>
+            <p>Follow pending, approved, or rejected transfer requests in real time.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Account &amp; Access</div>
+        <ul class="compact-list">
+          <li>Single sign-in page — system auto-detects student vs admin</li>
+          <li>Forgot password via email or Student ID</li>
+          <li>Secure password reset with email token</li>
+          <li>Mobile-friendly card views and detail modals</li>
+          <li>Install as a PWA app on phone or desktop</li>
+          <li>Dark mode support for comfortable viewing</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-note">
+    <span>Resident Portal — Self-service for hostel clients</span>
+    <span>Hostel Management System</span>
+  </div>
+</div>
+
+<!-- PAGE 3: HOSTEL MANAGER / ADMIN -->
+<div class="page inner">
+  <div class="page-header">
+    <h2>Hostel Manager Portal</h2>
+    <span class="page-num">Page 3 of 3</span>
+  </div>
+
+  <div class="role-banner manager">
+    <h3>Who is this for?</h3>
+    <p>Hostel wardens, administrators, and super admins who run day-to-day operations — from registering residents to collecting fees, managing staff, and generating financial reports.</p>
+  </div>
+
+  <div class="two-col">
+    <div>
+      <div class="section">
+        <div class="section-title green">Core Operations</div>
+        <div class="feature-grid">
+          <div class="feature-item">
+            <h4>Admin Dashboard</h4>
+            <p>KPIs: students, rooms, occupancy %, revenue, pending fees, complaints, maintenance, attendance rate, trends &amp; deadlines.</p>
+          </div>
+          <div class="feature-item">
+            <h4>Resident Management</h4>
+            <p>Add, edit, delete residents (students, job-based, short-term). Upload photos. Search and view full profiles.</p>
+          </div>
+          <div class="feature-item">
+            <h4>Room Management</h4>
+            <p>Create rooms, set capacity &amp; type, track status (available/occupied/maintenance), allocate students to rooms.</p>
+          </div>
+          <div class="feature-item">
+            <h4>Fee Collection</h4>
+            <p>Create fees (hostel, mess, security, fine), auto-calculate from room type, mark paid, view receipts, send overdue reminders.</p>
+          </div>
+          <div class="feature-item">
+            <h4>Attendance</h4>
+            <p>Mark daily attendance (present/absent/late), bulk mark all present, generate monthly reports.</p>
+          </div>
+          <div class="feature-item">
+            <h4>Visitor Log</h4>
+            <p>Check-in visitors with ID &amp; purpose, link to resident, check-out, search and filter active visitors.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title green">Services &amp; Maintenance</div>
+        <div class="feature-grid">
+          <div class="feature-item">
+            <h4>Leave Management</h4>
+            <p>Review, approve, or reject student leave requests. Create leave on behalf of residents.</p>
+          </div>
+          <div class="feature-item">
+            <h4>Mess Management</h4>
+            <p>Daily menu (breakfast/lunch/dinner), meal attendance tracking, mess fee status &amp; payment.</p>
+          </div>
+          <div class="feature-item">
+            <h4>Complaints</h4>
+            <p>Manage all complaints — assign staff, set priority, update status, add resolution notes.</p>
+          </div>
+          <div class="feature-item">
+            <h4>Maintenance</h4>
+            <p>Create work orders, assign staff, track status, record cost and completion date.</p>
+          </div>
+          <div class="feature-item">
+            <h4>Room Transfers</h4>
+            <p>Approve or reject transfer requests. Auto-update room occupancy on approval.</p>
+          </div>
+          <div class="feature-item">
+            <h4>Notifications</h4>
+            <p>View, mark read, and manage system alerts. Send bulk fee reminders to overdue students.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="section">
+        <div class="section-title green">Administration &amp; Reports</div>
+        <div class="feature-grid">
+          <div class="feature-item">
+            <h4>Staff Directory</h4>
+            <p>Manage wardens, cleaners, security, chefs, finance officers, and more — with roles, shifts &amp; salary.</p>
+          </div>
+          <div class="feature-item">
+            <h4>Inventory</h4>
+            <p>Track hostel assets &amp; supplies — quantity, location, condition, purchase info, and supplier details.</p>
+          </div>
+          <div class="feature-item">
+            <h4>Documents</h4>
+            <p>Upload &amp; manage resident documents (ID cards, contracts, photos) — filter, download, delete.</p>
+          </div>
+          <div class="feature-item">
+            <h4>Financial Reports</h4>
+            <p>Monthly income &amp; expenses, profit &amp; loss charts, category breakdowns, year/month filters.</p>
+          </div>
+          <div class="feature-item">
+            <h4>Multi-Hostel (Super Admin)</h4>
+            <p>Manage multiple hostels, create admin users, assign roles, switch hostel context from header.</p>
+          </div>
+          <div class="feature-item">
+            <h4>Theme &amp; PWA</h4>
+            <p>Dark/light mode toggle. Installable progressive web app for desktop and mobile use.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title green">Role Comparison</div>
+        <table class="compare-table">
+          <thead>
+            <tr><th>Capability</th><th>Resident</th><th>Manager</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>View personal dashboard</td><td class="check">✓</td><td class="check">✓</td></tr>
+            <tr><td>Manage residents &amp; rooms</td><td class="dash">—</td><td class="check">✓</td></tr>
+            <tr><td>View / collect fees</td><td>View only</td><td class="check">✓</td></tr>
+            <tr><td>Mark attendance</td><td class="dash">—</td><td class="check">✓</td></tr>
+            <tr><td>Submit complaints &amp; leave</td><td class="check">✓</td><td class="check">✓</td></tr>
+            <tr><td>Approve requests</td><td class="dash">—</td><td class="check">✓</td></tr>
+            <tr><td>Visitor &amp; mess management</td><td class="dash">—</td><td class="check">✓</td></tr>
+            <tr><td>Staff, inventory &amp; reports</td><td class="dash">—</td><td class="check">✓</td></tr>
+            <tr><td>Multi-hostel administration</td><td class="dash">—</td><td>Super Admin</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="section" style="margin-top:10px;">
+        <div class="section-title green">Why Choose This System?</div>
+        <ul class="compact-list green">
+          <li>Replaces paper registers, WhatsApp groups, and spreadsheets</li>
+          <li>Residents get transparency — managers get control</li>
+          <li>One platform for fees, rooms, mess, staff, and finances</li>
+          <li>Works on any browser — no app store required</li>
+          <li>Scales from a single hostel to multiple properties</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-note">
+    <span>Manager Portal — Complete hostel operations in one system</span>
+    <span>Hostel Management System — Demo Guide</span>
+  </div>
+</div>
+
+</body>
+</html>

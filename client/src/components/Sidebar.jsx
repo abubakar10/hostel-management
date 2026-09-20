@@ -20,124 +20,128 @@ import {
   ArrowRightLeft,
   X
 } from 'lucide-react'
-import { motion } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
 
-const menuItems = [
-  { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { path: '/students', icon: Users, label: 'Students' },
-  { path: '/rooms', icon: Home, label: 'Rooms' },
-  { path: '/fees', icon: DollarSign, label: 'Fees' },
-  { path: '/attendance', icon: ClipboardCheck, label: 'Attendance' },
-  { path: '/visitors', icon: UserCheck, label: 'Visitors' },
-  { path: '/leaves', icon: Calendar, label: 'Leaves' },
-  { path: '/mess', icon: Utensils, label: 'Mess' },
-  { path: '/complaints', icon: AlertCircle, label: 'Complaints' },
-  { path: '/maintenance', icon: Wrench, label: 'Maintenance' },
-  { path: '/room-transfers', icon: ArrowRightLeft, label: 'Room Transfers' },
-  { path: '/inventory', icon: Package, label: 'Inventory' },
-  { path: '/documents', icon: FileText, label: 'Documents' },
-  { path: '/staff', icon: UserCog, label: 'Staff' },
-  { path: '/reports', icon: BarChart3, label: 'Reports' },
-  { path: '/notifications', icon: Bell, label: 'Notifications' },
+const menuGroups = [
+  {
+    title: 'Start here',
+    items: [{ path: '/dashboard', icon: LayoutDashboard, label: 'Home' }]
+  },
+  {
+    title: 'People and rooms',
+    items: [
+      { path: '/students', icon: Users, label: 'People' },
+      { path: '/rooms', icon: Home, label: 'Rooms' },
+      { path: '/staff', icon: UserCog, label: 'Staff' }
+    ]
+  },
+  {
+    title: 'Daily work',
+    items: [
+      { path: '/fees', icon: DollarSign, label: 'Payments' },
+      { path: '/attendance', icon: ClipboardCheck, label: 'Attendance' },
+      { path: '/visitors', icon: UserCheck, label: 'Visitors' },
+      { path: '/mess', icon: Utensils, label: 'Meals' }
+    ]
+  },
+  {
+    title: 'Requests',
+    items: [
+      { path: '/leaves', icon: Calendar, label: 'Leave' },
+      { path: '/complaints', icon: AlertCircle, label: 'Problems' },
+      { path: '/maintenance', icon: Wrench, label: 'Repairs' },
+      { path: '/room-transfers', icon: ArrowRightLeft, label: 'Room change' }
+    ]
+  },
+  {
+    title: 'Records',
+    items: [
+      { path: '/inventory', icon: Package, label: 'Stock' },
+      { path: '/documents', icon: FileText, label: 'Files' },
+      { path: '/reports', icon: BarChart3, label: 'Money report' },
+      { path: '/notifications', icon: Bell, label: 'Alerts' }
+    ]
+  }
 ]
+
+const NavItem = ({ item, onClose }) => {
+  const Icon = item.icon
+  return (
+    <NavLink
+      to={item.path}
+      onClick={() => {
+        if (window.innerWidth < 768) onClose?.()
+      }}
+      className={({ isActive }) =>
+        `flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors touch-manipulation min-h-[44px] ${
+          isActive
+            ? 'bg-primary-600 text-white'
+            : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+        }`
+      }
+    >
+      <Icon size={18} className="flex-shrink-0" />
+      <span className="font-medium text-[15px]">{item.label}</span>
+    </NavLink>
+  )
+}
 
 const Sidebar = ({ isOpen, onClose }) => {
   const { user } = useAuth()
-  
-  // Add super admin menu items
-  const allMenuItems = user?.role === 'super_admin' 
-    ? [...menuItems, 
-        { path: '/hostels', icon: Building2, label: 'Hostels' },
-        { path: '/users', icon: UserPlus, label: 'Users' }
+  const groups = user?.role === 'super_admin'
+    ? [
+        ...menuGroups,
+        {
+          title: 'Owner',
+          items: [
+            { path: '/hostels', icon: Building2, label: 'Hostels' },
+            { path: '/users', icon: UserPlus, label: 'Managers' }
+          ]
+        }
       ]
-    : menuItems
+    : menuGroups
+
+  const nav = (
+    <nav className="p-3 space-y-5">
+      {groups.map((group) => (
+        <div key={group.title}>
+          <p className="px-3 mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+            {group.title}
+          </p>
+          <div className="space-y-0.5">
+            {group.items.map((item) => (
+              <NavItem key={item.path} item={item} onClose={onClose} />
+            ))}
+          </div>
+        </div>
+      ))}
+    </nav>
+  )
 
   return (
     <>
-      {/* Mobile & Tablet sidebar - fixed and toggleable (up to lg breakpoint) */}
       <aside className={`
-        fixed lg:hidden top-16 left-0 h-[calc(100vh-4rem)]
-        w-64 bg-white dark:bg-gray-800 shadow-lg z-50
+        fixed md:hidden top-16 left-0 h-[calc(100vh-4rem)]
+        w-64 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 z-50
         transform transition-transform duration-300 ease-in-out
         ${isOpen ? 'translate-x-0' : '-translate-x-full'}
         overflow-y-auto
-        flex-shrink-0
       `}>
-        <div className="flex items-center justify-between p-4 border-b dark:border-gray-700">
-          <h2 className="font-semibold text-gray-800 dark:text-gray-200">Menu</h2>
+        <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700">
+          <h2 className="font-semibold text-slate-800 dark:text-slate-200">Menu</h2>
           <button
             onClick={onClose}
-            className="p-2 text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors touch-manipulation"
+            className="p-2 text-slate-600 dark:text-slate-300 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700"
             aria-label="Close menu"
           >
             <X size={24} />
           </button>
         </div>
-        <nav className="p-2 sm:p-4 space-y-1 sm:space-y-2">
-          {allMenuItems.map((item, index) => {
-            const Icon = item.icon
-            return (
-              <motion.div
-                key={item.path}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.05 }}
-              >
-                <NavLink
-                  to={item.path}
-                  onClick={() => {
-                    // Close sidebar on mobile/tablet when item is clicked
-                    if (window.innerWidth < 1024) {
-                      onClose()
-                    }
-                  }}
-                  className={({ isActive }) =>
-                    `flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg transition-all duration-200 touch-manipulation min-h-[44px] ${
-                      isActive
-                        ? 'bg-primary-600 dark:bg-primary-500 text-white shadow-md'
-                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                    }`
-                  }
-                >
-                  <Icon size={18} className="sm:w-5 sm:h-5 flex-shrink-0" />
-                  <span className="font-medium text-sm sm:text-base">{item.label}</span>
-                </NavLink>
-              </motion.div>
-            )
-          })}
-        </nav>
+        {nav}
       </aside>
 
-      {/* Desktop sidebar - always visible (lg and above) */}
-      <aside className="hidden lg:block fixed top-16 left-0 h-[calc(100vh-4rem)] w-64 min-w-[16rem] max-w-[16rem] bg-white dark:bg-gray-800 shadow-lg overflow-y-auto flex-shrink-0 z-30">
-        <nav className="p-2 sm:p-4 space-y-1 sm:space-y-2">
-          {allMenuItems.map((item, index) => {
-            const Icon = item.icon
-            return (
-              <motion.div
-                key={item.path}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.05 }}
-              >
-                <NavLink
-                  to={item.path}
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 touch-manipulation min-h-[44px] whitespace-nowrap ${
-                      isActive
-                        ? 'bg-primary-600 dark:bg-primary-500 text-white shadow-md'
-                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                    }`
-                  }
-                >
-                  <Icon size={20} className="flex-shrink-0" />
-                  <span className="font-medium text-sm flex-shrink-0">{item.label}</span>
-                </NavLink>
-              </motion.div>
-            )
-          })}
-        </nav>
+      <aside className="hidden md:block fixed top-16 left-0 h-[calc(100vh-4rem)] w-64 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 overflow-y-auto z-30">
+        {nav}
       </aside>
     </>
   )

@@ -1,6 +1,7 @@
 import express from 'express';
 import { pool } from '../config/database.js';
 import { authenticateStudent } from '../middleware/studentAuth.js';
+import { stripPassword } from '../utils/sanitize.js';
 
 const router = express.Router();
 
@@ -16,7 +17,7 @@ router.get('/profile', authenticateStudent, async (req, res) => {
       WHERE s.id = $1
     `, [req.student.id]);
     
-    res.json(student.rows[0]);
+    res.json(stripPassword(student.rows[0]));
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -263,26 +264,23 @@ router.get('/rooms/available', authenticateStudent, async (req, res) => {
 // Get student's notifications
 router.get('/notifications', authenticateStudent, async (req, res) => {
   try {
-    // Get user account linked to student email if exists
-    const userResult = await pool.query(
-      'SELECT id FROM users WHERE email = $1',
-      [req.student.email]
+    try {
+      await pool.query('ALTER TABLE notifications ADD COLUMN IF NOT EXISTS student_id INTEGER');
+    } catch (_) {}
+
+    const result = await pool.query(
+      `SELECT id, title, message, type, related_module, is_read, created_at
+       FROM notifications
+       WHERE student_id = $1
+          OR (hostel_id = $2 AND student_id IS NULL AND user_id IS NULL)
+       ORDER BY created_at DESC
+       LIMIT 50`,
+      [req.student.id, req.student.hostel_id]
     );
-    
-    if (userResult.rows.length === 0) {
-      return res.json([]);
-    }
-    
-    const result = await pool.query(`
-      SELECT * FROM notifications
-      WHERE user_id = $1
-      ORDER BY created_at DESC
-      LIMIT 50
-    `, [userResult.rows[0].id]);
-    
+
     res.json(result.rows);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Could not load alerts' });
   }
 });
 

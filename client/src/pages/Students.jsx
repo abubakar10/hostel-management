@@ -220,10 +220,10 @@ const Students = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
         <div className="w-full sm:w-auto">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-gray-100 mb-1 sm:mb-2">
-            Student Management
+            People living here
           </h1>
           <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
-            Manage all student records
+            Add, find, and update residents. Their first password is their ID.
           </p>
         </div>
         <button
@@ -234,7 +234,7 @@ const Students = () => {
           className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto min-h-[48px] sm:min-h-[44px] text-sm sm:text-base shadow-lg active:scale-95 transition-transform"
         >
           <Plus size={20} className="sm:w-5 sm:h-5" />
-          <span className="sm:inline">Add Student</span>
+          <span className="sm:inline">Add a person</span>
         </button>
       </div>
 
@@ -246,7 +246,7 @@ const Students = () => {
             <Search className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500" size={20} />
             <input
               type="text"
-              placeholder="Search students..."
+              placeholder="Search by name, ID, or email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="input-field pl-10 sm:pl-12 text-base sm:text-sm min-h-[48px] sm:min-h-[44px]"

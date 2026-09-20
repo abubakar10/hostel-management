@@ -1,7 +1,7 @@
 import express from 'express';
 import { pool } from '../config/database.js';
 import { authenticateToken } from '../middleware/auth.js';
-import { setHostelContext } from '../middleware/hostel.js';
+import { setHostelContext, requireHostelRecord } from '../middleware/hostel.js';
 
 const router = express.Router();
 
@@ -41,7 +41,7 @@ router.get('/', authenticateToken, setHostelContext, async (req, res) => {
 });
 
 // Get leave request by ID
-router.get('/:id', authenticateToken, async (req, res) => {
+router.get('/:id', authenticateToken, requireHostelRecord('leave_requests'), async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT l.*, s.first_name as student_first_name, s.last_name as student_last_name,
@@ -89,7 +89,7 @@ router.post('/', authenticateToken, setHostelContext, async (req, res) => {
 });
 
 // Update leave request (approve/reject)
-router.put('/:id', authenticateToken, async (req, res) => {
+router.put('/:id', authenticateToken, requireHostelRecord('leave_requests'), async (req, res) => {
   try {
     const { status, remarks } = req.body;
 
@@ -133,7 +133,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
 });
 
 // Delete leave request
-router.delete('/:id', authenticateToken, async (req, res) => {
+router.delete('/:id', authenticateToken, requireHostelRecord('leave_requests'), async (req, res) => {
   try {
     await pool.query('DELETE FROM leave_requests WHERE id = $1', [req.params.id]);
     res.json({ message: 'Leave request deleted successfully' });

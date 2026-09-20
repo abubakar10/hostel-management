@@ -1,7 +1,7 @@
 import express from 'express';
 import { pool } from '../config/database.js';
 import { authenticateToken } from '../middleware/auth.js';
-import { setHostelContext } from '../middleware/hostel.js';
+import { setHostelContext, requireHostelRecord } from '../middleware/hostel.js';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
@@ -88,7 +88,7 @@ router.get('/', authenticateToken, setHostelContext, async (req, res) => {
 });
 
 // Get document by ID
-router.get('/:id', authenticateToken, async (req, res) => {
+router.get('/:id', authenticateToken, requireHostelRecord('documents'), async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT d.*, s.first_name as student_first_name, s.last_name as student_last_name,
@@ -208,7 +208,7 @@ router.post('/', authenticateToken, setHostelContext, upload.single('file'), asy
 });
 
 // Download document
-router.get('/:id/download', authenticateToken, async (req, res) => {
+router.get('/:id/download', authenticateToken, requireHostelRecord('documents'), async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM documents WHERE id = $1', [req.params.id]);
     
@@ -252,7 +252,7 @@ router.get('/:id/download', authenticateToken, async (req, res) => {
 });
 
 // Delete document
-router.delete('/:id', authenticateToken, async (req, res) => {
+router.delete('/:id', authenticateToken, requireHostelRecord('documents'), async (req, res) => {
   try {
     const result = await pool.query('SELECT file_path FROM documents WHERE id = $1', [req.params.id]);
     

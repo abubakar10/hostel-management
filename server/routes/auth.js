@@ -1,10 +1,12 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { pool } from '../config/database.js';
 import { sendPasswordResetEmail } from '../config/email.js';
 import { checkEmailExists, isValidEmailFormat } from '../utils/emailValidation.js';
+import { signStaffToken, signStudentToken } from '../utils/jwt.js';
+import { authenticateToken } from '../middleware/auth.js';
+import { rateLimit } from '../middleware/rateLimit.js';
 
 const router = express.Router();
 
@@ -30,53 +32,51 @@ const ensurePasswordResetTable = async () => {
 // Initialize table on startup
 ensurePasswordResetTable();
 
-// Register
-router.post('/register', async (req, res) => {
+// Register is staff-only. Super admin creates manager accounts from Users.
+router.post('/register', authenticateToken, async (req, res) => {
   try {
+    if (req.user.role !== 'super_admin') {
+      return res.status(403).json({ error: 'Only the owner can create staff accounts' });
+    }
+
     const { username, email, password, role, hostel_id } = req.body;
 
-    // Validate email format
+    if (!password || password.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters' });
+    }
+
     if (!email || !isValidEmailFormat(email)) {
       return res.status(400).json({ error: 'Please enter a valid email address' });
     }
 
-    // Check if email already exists in any table
     const emailCheck = await checkEmailExists(email);
     if (emailCheck.exists) {
       return res.status(400).json({ error: emailCheck.message });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-
-    // If role is super_admin, hostel_id should be null
-    const finalHostelId = (role === 'super_admin') ? null : hostel_id;
+    const safeRole = role === 'super_admin' ? 'super_admin' : 'admin';
+    const finalHostelId = safeRole === 'super_admin' ? null : hostel_id;
 
     const result = await pool.query(
       'INSERT INTO users (username, email, password, role, hostel_id) VALUES ($1, $2, $3, $4, $5) RETURNING id, username, email, role, hostel_id',
-      [username, email, hashedPassword, role || 'admin', finalHostelId]
-    );
-
-    const token = jwt.sign(
-      { id: result.rows[0].id, username: result.rows[0].username, role: result.rows[0].role },
-      process.env.JWT_SECRET || 'your_jwt_secret_key_here',
-      { expiresIn: process.env.JWT_EXPIRE || '7d' }
+      [username, email, hashedPassword, safeRole, finalHostelId]
     );
 
     res.status(201).json({
       message: 'User registered successfully',
-      token,
       user: result.rows[0]
     });
   } catch (error) {
     if (error.code === '23505') {
       return res.status(400).json({ error: 'Username or email already exists' });
     }
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Could not create the account. Please try again.' });
   }
 });
 
 // Login
-router.post('/login', async (req, res) => {
+router.post('/login', rateLimit({ windowMs: 15 * 60 * 1000, max: 12 }), async (req, res) => {
   try {
     const { username, password, userType } = req.body;
 
@@ -109,35 +109,25 @@ router.post('/login', async (req, res) => {
       }
 
       const student = studentResult.rows[0];
-      
-      // Check if student has a password set (if password column exists)
-      // For now, we'll use a default password system or email-based auth
-      // If password column doesn't exist, we'll use student_id as default password
       let isValidPassword = false;
-      
+
       if (student.password) {
         isValidPassword = await bcrypt.compare(password, student.password);
-      } else {
-        // Default: use student_id as password for initial setup
-        // In production, students should set their password
-        isValidPassword = password === student.student_id || password === 'student123';
+      } else if (password === student.student_id) {
+        // One-time migration: first login with Student ID stores a hashed password
+        const hashedPassword = await bcrypt.hash(password, 10);
+        try {
+          await pool.query('ALTER TABLE students ADD COLUMN IF NOT EXISTS password VARCHAR(255)');
+        } catch (_) {}
+        await pool.query('UPDATE students SET password = $1 WHERE id = $2', [hashedPassword, student.id]);
+        isValidPassword = true;
       }
 
       if (!isValidPassword) {
-        return res.status(401).json({ error: 'Invalid credentials' });
+        return res.status(401).json({ error: 'Wrong ID or password' });
       }
 
-      const token = jwt.sign(
-        { 
-          id: student.id, 
-          student_id: student.student_id, 
-          email: student.email,
-          role: 'student',
-          studentData: true
-        },
-        process.env.JWT_SECRET || 'your_jwt_secret_key_here',
-        { expiresIn: process.env.JWT_EXPIRE || '7d' }
-      );
+      const token = signStudentToken(student);
 
       return res.json({
         message: 'Login successful',
@@ -176,21 +166,17 @@ router.post('/login', async (req, res) => {
     }
 
     if (result.rows.length === 0) {
-      return res.status(401).json({ error: 'Invalid credentials' });
+      return res.status(401).json({ error: 'Wrong username or password' });
     }
 
     const user = result.rows[0];
     const isValidPassword = await bcrypt.compare(password, user.password);
 
     if (!isValidPassword) {
-      return res.status(401).json({ error: 'Invalid credentials' });
+      return res.status(401).json({ error: 'Wrong username or password' });
     }
 
-    const token = jwt.sign(
-      { id: user.id, username: user.username, role: user.role },
-      process.env.JWT_SECRET || 'your_jwt_secret_key_here',
-      { expiresIn: process.env.JWT_EXPIRE || '7d' }
-    );
+    const token = signStaffToken(user);
 
     res.json({
       message: 'Login successful',
@@ -213,7 +199,7 @@ router.post('/login', async (req, res) => {
 });
 
 // Forgot Password - Request reset token
-router.post('/forgot-password', async (req, res) => {
+router.post('/forgot-password', rateLimit({ windowMs: 15 * 60 * 1000, max: 8 }), async (req, res) => {
   try {
     const { email } = req.body;
 

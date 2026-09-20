@@ -202,8 +202,8 @@ const Staff = () => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">Staff Management</h1>
-          <p className="text-gray-600 dark:text-gray-400">Manage wardens, cleaners, and security staff</p>
+          <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">Staff</h1>
+          <p className="text-gray-600 dark:text-gray-400">Keep names and contact details of people who work here</p>
         </div>
         <button
           onClick={() => {

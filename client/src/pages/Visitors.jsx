@@ -182,8 +182,8 @@ const Visitors = () => {
     <div className="space-y-6 w-full max-w-full overflow-x-hidden">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">Visitor Management</h1>
-          <p className="text-gray-600 dark:text-gray-400">Manage visitor check-in and check-out</p>
+          <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">Visitors</h1>
+          <p className="text-gray-600 dark:text-gray-400">Write down guests when they come in, and tick them out when they leave</p>
         </div>
         <button
           onClick={() => {

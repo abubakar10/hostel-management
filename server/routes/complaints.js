@@ -1,7 +1,7 @@
 import express from 'express';
 import { pool } from '../config/database.js';
 import { authenticateToken } from '../middleware/auth.js';
-import { setHostelContext } from '../middleware/hostel.js';
+import { setHostelContext, requireHostelRecord } from '../middleware/hostel.js';
 
 const router = express.Router();
 
@@ -49,7 +49,7 @@ router.get('/', authenticateToken, setHostelContext, async (req, res) => {
 });
 
 // Get complaint by ID
-router.get('/:id', authenticateToken, async (req, res) => {
+router.get('/:id', authenticateToken, requireHostelRecord('complaints'), async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT c.*, s.first_name, s.last_name, s.student_id as student_number,
@@ -100,7 +100,7 @@ router.post('/', authenticateToken, setHostelContext, async (req, res) => {
 });
 
 // Update complaint
-router.put('/:id', authenticateToken, async (req, res) => {
+router.put('/:id', authenticateToken, requireHostelRecord('complaints'), async (req, res) => {
   try {
     const { status, assigned_to, resolution, priority } = req.body;
 
@@ -188,7 +188,7 @@ router.post('/maintenance', authenticateToken, setHostelContext, async (req, res
 });
 
 // Update maintenance request
-router.put('/maintenance/:id', authenticateToken, async (req, res) => {
+router.put('/maintenance/:id', authenticateToken, requireHostelRecord('maintenance_requests'), async (req, res) => {
   try {
     const { status, assigned_to, cost, completed_date } = req.body;
 
@@ -244,7 +244,7 @@ router.put('/maintenance/:id', authenticateToken, async (req, res) => {
 });
 
 // Delete maintenance request
-router.delete('/maintenance/:id', authenticateToken, async (req, res) => {
+router.delete('/maintenance/:id', authenticateToken, requireHostelRecord('maintenance_requests'), async (req, res) => {
   try {
     await pool.query('DELETE FROM maintenance_requests WHERE id = $1', [req.params.id]);
     res.json({ message: 'Maintenance request deleted successfully' });

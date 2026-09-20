@@ -1,7 +1,7 @@
 import express from 'express';
 import { pool } from '../config/database.js';
 import { authenticateToken } from '../middleware/auth.js';
-import { setHostelContext } from '../middleware/hostel.js';
+import { setHostelContext, requireHostelRecord } from '../middleware/hostel.js';
 
 const router = express.Router();
 
@@ -106,7 +106,7 @@ router.get('/', authenticateToken, setHostelContext, async (req, res) => {
 });
 
 // Get room by ID
-router.get('/:id', authenticateToken, async (req, res) => {
+router.get('/:id', authenticateToken, requireHostelRecord('rooms'), async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT r.*, rt.type_name, rt.capacity as type_capacity, rt.price_per_month
@@ -203,7 +203,7 @@ router.post('/', authenticateToken, setHostelContext, async (req, res) => {
 });
 
 // Update room
-router.put('/:id', authenticateToken, setHostelContext, async (req, res) => {
+router.put('/:id', authenticateToken, setHostelContext, requireHostelRecord('rooms'), async (req, res) => {
   try {
     const { room_number, room_type_id, floor, capacity, status, amenities } = req.body;
 

@@ -49,8 +49,8 @@ const StudentNotifications = () => {
   return (
     <div className="space-y-4 sm:space-y-6">
       <div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-gray-100 mb-1 sm:mb-2">Notifications</h1>
-        <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">View your notifications</p>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-gray-100 mb-1 sm:mb-2">Alerts</h1>
+        <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">Messages about payments and requests</p>
       </div>
 
       <div className="card">
@@ -90,8 +90,8 @@ const StudentNotifications = () => {
           ))}
           {notifications.length === 0 && (
             <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-              No notifications
-            </div>
+            No messages yet
+          </div>
           )}
         </div>
       </div>

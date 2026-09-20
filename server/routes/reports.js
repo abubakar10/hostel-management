@@ -5,6 +5,93 @@ import { setHostelContext } from '../middleware/hostel.js';
 
 const router = express.Router();
 
+router.get('/overview', authenticateToken, setHostelContext, async (req, res) => {
+  try {
+    const hostelId = req.query.hostel_id || req.hostelId;
+    const hostelFilter = hostelId ? 'AND hostel_id = $1' : '';
+    const params = hostelId ? [hostelId] : [];
+    const today = new Date().toISOString().split('T')[0];
+
+    const [students, rooms, fees, complaints, maintenance, attendance] = await Promise.all([
+      pool.query(`SELECT COUNT(*)::int AS count FROM students WHERE status = 'active' ${hostelFilter}`, params),
+      pool.query(
+        `SELECT COUNT(*)::int AS total,
+                COUNT(*) FILTER (WHERE current_occupancy > 0)::int AS occupied,
+                COALESCE(SUM(capacity), 0)::int AS capacity,
+                COALESCE(SUM(current_occupancy), 0)::int AS filled
+         FROM rooms WHERE 1=1 ${hostelFilter}`,
+        params
+      ),
+      pool.query(
+        `SELECT
+           COALESCE(SUM(amount) FILTER (WHERE status = 'paid'), 0)::float AS paid,
+           COALESCE(SUM(amount) FILTER (WHERE status = 'pending'), 0)::float AS pending,
+           COALESCE(SUM(amount) FILTER (WHERE status IN ('pending','overdue') AND due_date < CURRENT_DATE), 0)::float AS overdue
+         FROM fees WHERE 1=1 ${hostelFilter}`,
+        params
+      ),
+      pool.query(`SELECT COUNT(*)::int AS count FROM complaints WHERE status = 'open' ${hostelFilter}`, params),
+      pool.query(`SELECT COUNT(*)::int AS count FROM maintenance_requests WHERE status = 'pending' ${hostelFilter}`, params)
+        .catch(() => ({ rows: [{ count: 0 }] })),
+      pool.query(
+        hostelId
+          ? `SELECT COUNT(*)::int AS marked, COUNT(*) FILTER (WHERE status = 'present')::int AS present FROM attendance WHERE hostel_id = $1 AND date = $2`
+          : `SELECT COUNT(*)::int AS marked, COUNT(*) FILTER (WHERE status = 'present')::int AS present FROM attendance WHERE date = $1`,
+        hostelId ? [hostelId, today] : [today]
+      )
+    ]);
+
+    const room = rooms.rows[0];
+    const occupancyRate = room.capacity > 0 ? Math.round((room.filled / room.capacity) * 100) : 0;
+    const att = attendance.rows[0];
+    const attendanceRate = att.marked > 0 ? Math.round((att.present / att.marked) * 100) : 0;
+
+    const recentPeople = await pool.query(
+      `SELECT first_name, last_name, created_at FROM students WHERE 1=1 ${hostelFilter} ORDER BY created_at DESC LIMIT 5`,
+      params
+    );
+    const openProblems = await pool.query(
+      `SELECT title, created_at FROM complaints WHERE status = 'open' ${hostelFilter} ORDER BY created_at DESC LIMIT 5`,
+      params
+    );
+    const dueSoon = await pool.query(
+      `SELECT f.amount, f.due_date, s.first_name, s.last_name
+       FROM fees f JOIN students s ON f.student_id = s.id
+       WHERE f.status = 'pending' AND f.due_date >= CURRENT_DATE AND f.due_date <= CURRENT_DATE + INTERVAL '7 days'
+       ${hostelId ? 'AND f.hostel_id = $1' : ''}
+       ORDER BY f.due_date ASC LIMIT 5`,
+      params
+    );
+    const topPending = await pool.query(
+      `SELECT s.first_name, s.last_name, SUM(f.amount)::float AS amount, COUNT(*)::int AS count
+       FROM fees f JOIN students s ON f.student_id = s.id
+       WHERE f.status = 'pending' ${hostelId ? 'AND f.hostel_id = $1' : ''}
+       GROUP BY s.id, s.first_name, s.last_name
+       ORDER BY amount DESC LIMIT 5`,
+      params
+    );
+
+    res.json({
+      students: students.rows[0].count,
+      totalRooms: room.total,
+      occupiedRooms: room.occupied,
+      occupancyRate,
+      totalFees: fees.rows[0].paid,
+      pendingFees: fees.rows[0].pending,
+      overdueFees: fees.rows[0].overdue,
+      complaints: complaints.rows[0].count,
+      maintenance: maintenance.rows[0].count,
+      attendanceRate,
+      recentPeople: recentPeople.rows,
+      openProblems: openProblems.rows,
+      dueSoon: dueSoon.rows,
+      topPending: topPending.rows
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Could not load the home numbers' });
+  }
+});
+
 // Monthly Income & Expenses
 router.get('/income-expenses/:year/:month', authenticateToken, setHostelContext, async (req, res) => {
   try {
@@ -22,7 +109,7 @@ router.get('/income-expenses/:year/:month', authenticateToken, setHostelContext,
         AND EXTRACT(MONTH FROM paid_date) = $2
     `;
     const incomeParams = [year, month];
-    if (hostelId && req.user.role !== 'super_admin') {
+    if (hostelId) {
       incomeQuery += ` AND hostel_id = $3`;
       incomeParams.push(hostelId);
     }
@@ -39,7 +126,7 @@ router.get('/income-expenses/:year/:month', authenticateToken, setHostelContext,
         AND EXTRACT(MONTH FROM date) = $2
     `;
     const expensesParams = [year, month];
-    if (hostelId && req.user.role !== 'super_admin') {
+    if (hostelId) {
       expensesQuery += ` AND hostel_id = $3`;
       expensesParams.push(hostelId);
     }
@@ -53,7 +140,7 @@ router.get('/income-expenses/:year/:month', authenticateToken, setHostelContext,
       WHERE status = 'active'
     `;
     const salariesParams = [];
-    if (hostelId && req.user.role !== 'super_admin') {
+    if (hostelId) {
       salariesQuery += ` AND hostel_id = $1`;
       salariesParams.push(hostelId);
     }
@@ -89,7 +176,7 @@ router.get('/profit-loss/:year', authenticateToken, setHostelContext, async (req
           AND status = 'paid'
       `;
       const incomeParams = [year, month];
-      if (hostelId && req.user.role !== 'super_admin') {
+      if (hostelId) {
         incomeQuery += ` AND hostel_id = $3`;
         incomeParams.push(hostelId);
       }
@@ -102,7 +189,7 @@ router.get('/profit-loss/:year', authenticateToken, setHostelContext, async (req
           AND EXTRACT(MONTH FROM date) = $2
       `;
       const expensesParams = [year, month];
-      if (hostelId && req.user.role !== 'super_admin') {
+      if (hostelId) {
         expensesQuery += ` AND hostel_id = $3`;
         expensesParams.push(hostelId);
       }
@@ -114,7 +201,7 @@ router.get('/profit-loss/:year', authenticateToken, setHostelContext, async (req
         WHERE status = 'active'
       `;
       const salariesParams = [];
-      if (hostelId && req.user.role !== 'super_admin') {
+      if (hostelId) {
         salariesQuery += ` AND hostel_id = $1`;
         salariesParams.push(hostelId);
       }
@@ -154,7 +241,7 @@ router.get('/category-breakdown/:year/:month', authenticateToken, setHostelConte
         AND status = 'paid'
     `;
     const feeCategoriesParams = [year, month];
-    if (hostelId && req.user.role !== 'super_admin') {
+    if (hostelId) {
       feeCategoriesQuery += ` AND hostel_id = $3`;
       feeCategoriesParams.push(hostelId);
     }
@@ -169,7 +256,7 @@ router.get('/category-breakdown/:year/:month', authenticateToken, setHostelConte
         AND EXTRACT(MONTH FROM date) = $2
     `;
     const expenseCategoriesParams = [year, month];
-    if (hostelId && req.user.role !== 'super_admin') {
+    if (hostelId) {
       expenseCategoriesQuery += ` AND hostel_id = $3`;
       expenseCategoriesParams.push(hostelId);
     }
@@ -201,7 +288,7 @@ router.get('/monthly-comparison/:year', authenticateToken, setHostelContext, asy
           AND status = 'paid'
       `;
       const incomeParams = [year, month];
-      if (hostelId && req.user.role !== 'super_admin') {
+      if (hostelId) {
         incomeQuery += ` AND hostel_id = $3`;
         incomeParams.push(hostelId);
       }
@@ -214,7 +301,7 @@ router.get('/monthly-comparison/:year', authenticateToken, setHostelContext, asy
           AND EXTRACT(MONTH FROM date) = $2
       `;
       const expensesParams = [year, month];
-      if (hostelId && req.user.role !== 'super_admin') {
+      if (hostelId) {
         expensesQuery += ` AND hostel_id = $3`;
         expensesParams.push(hostelId);
       }
@@ -234,29 +321,37 @@ router.get('/monthly-comparison/:year', authenticateToken, setHostelContext, asy
 });
 
 // Add expense
-router.post('/expenses', authenticateToken, async (req, res) => {
+router.post('/expenses', authenticateToken, setHostelContext, async (req, res) => {
   try {
     const { category, description, amount, date, payment_method } = req.body;
+    const hostelId = req.body.hostel_id || req.hostelId;
 
     const result = await pool.query(
-      `INSERT INTO expenses (category, description, amount, date, payment_method)
-       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-      [category, description, amount, date, payment_method]
+      `INSERT INTO expenses (category, description, amount, date, payment_method, hostel_id)
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+      [category, description, amount, date, payment_method, hostelId || null]
     );
 
     res.status(201).json(result.rows[0]);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Could not save the expense' });
   }
 });
 
-// Get all expenses
-router.get('/expenses/all', authenticateToken, async (req, res) => {
+router.get('/expenses/all', authenticateToken, setHostelContext, async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM expenses ORDER BY date DESC');
+    const hostelId = req.query.hostel_id || req.hostelId;
+    let query = 'SELECT * FROM expenses WHERE 1=1';
+    const params = [];
+    if (hostelId) {
+      query += ' AND hostel_id = $1';
+      params.push(hostelId);
+    }
+    query += ' ORDER BY date DESC';
+    const result = await pool.query(query, params);
     res.json(result.rows);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Could not load expenses' });
   }
 });
 

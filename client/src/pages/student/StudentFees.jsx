@@ -58,7 +58,7 @@ const StudentFees = () => {
   return (
     <div className="space-y-4 sm:space-y-6">
       <div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-gray-100 mb-1 sm:mb-2">My Fees</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-gray-100 mb-1 sm:mb-2">My payments</h1>
         <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">View your fee status and payment history</p>
       </div>
 

@@ -1,9 +1,11 @@
 import express from 'express';
+import bcrypt from 'bcryptjs';
 import { pool } from '../config/database.js';
 import { authenticateToken } from '../middleware/auth.js';
-import { setHostelContext } from '../middleware/hostel.js';
+import { setHostelContext, requireHostelRecord } from '../middleware/hostel.js';
 import { checkEmailExists, isValidEmailFormat } from '../utils/emailValidation.js';
 import { ensurePhotoColumnExists } from '../utils/databaseMigration.js';
+import { stripPassword, stripPasswords, publicError } from '../utils/sanitize.js';
 
 const router = express.Router();
 
@@ -28,14 +30,14 @@ router.get('/', authenticateToken, setHostelContext, async (req, res) => {
     query += ` ORDER BY s.created_at DESC`;
 
     const result = await pool.query(query, params);
-    res.json(result.rows);
+    res.json(stripPasswords(result.rows));
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: publicError(error) });
   }
 });
 
 // Get student by ID
-router.get('/:id', authenticateToken, async (req, res) => {
+router.get('/:id', authenticateToken, requireHostelRecord('students'), async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT s.*, r.room_number, rt.type_name as room_type
@@ -48,7 +50,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Student not found' });
     }
-    res.json(result.rows[0]);
+    res.json(stripPassword(result.rows[0]));
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -117,14 +119,36 @@ router.post('/', authenticateToken, setHostelContext, async (req, res) => {
       ? resident_type 
       : 'student';
 
+    if (room_id) {
+      const roomCheck = await pool.query(
+        'SELECT capacity, current_occupancy, hostel_id FROM rooms WHERE id = $1',
+        [room_id]
+      );
+      if (roomCheck.rows.length === 0) {
+        return res.status(400).json({ error: 'Selected room was not found' });
+      }
+      const room = roomCheck.rows[0];
+      if (room.hostel_id && Number(room.hostel_id) !== Number(finalHostelId)) {
+        return res.status(400).json({ error: 'That room belongs to a different hostel' });
+      }
+      if (parseInt(room.current_occupancy || 0) >= parseInt(room.capacity || 0)) {
+        return res.status(400).json({ error: 'That room is already full' });
+      }
+    }
+
+    try {
+      await pool.query('ALTER TABLE students ADD COLUMN IF NOT EXISTS password VARCHAR(255)');
+    } catch (_) {}
+    const hashedPassword = await bcrypt.hash(student_id, 10);
+
     const result = await pool.query(
       `INSERT INTO students (student_id, first_name, last_name, email, phone, address, 
-       date_of_birth, gender, resident_type, course, year_of_study, room_id, status, hostel_id, photo)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
-       RETURNING *`,
+       date_of_birth, gender, resident_type, course, year_of_study, room_id, status, hostel_id, photo, password)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+       RETURNING id, student_id, first_name, last_name, email, phone, address, date_of_birth, gender, resident_type, course, year_of_study, room_id, status, hostel_id, photo, created_at, updated_at`,
       [student_id, first_name, last_name, email, phone || null, address || null,
        normalizedDateOfBirth, gender || null, finalResidentType, course || null, year_of_study || null, 
-       room_id || null, status || 'active', finalHostelId, photo || null]
+       room_id || null, status || 'active', finalHostelId, photo || null, hashedPassword]
     );
 
     // Update room occupancy if room_id is provided
@@ -162,7 +186,7 @@ router.post('/', authenticateToken, setHostelContext, async (req, res) => {
 });
 
 // Update student
-router.put('/:id', authenticateToken, async (req, res) => {
+router.put('/:id', authenticateToken, requireHostelRecord('students'), async (req, res) => {
   try {
     // Ensure photo column exists
     try {
@@ -280,7 +304,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
       await updateRoomStatus(room_id);
     }
 
-    res.json(result.rows[0]);
+    res.json(stripPassword(result.rows[0]));
   } catch (error) {
     if (error.code === '23505') {
       return res.status(400).json({ error: 'Student ID or email already exists' });
@@ -307,7 +331,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
 });
 
 // Delete student
-router.delete('/:id', authenticateToken, async (req, res) => {
+router.delete('/:id', authenticateToken, requireHostelRecord('students'), async (req, res) => {
   try {
     const student = await pool.query('SELECT room_id FROM students WHERE id = $1', [req.params.id]);
     const roomId = student.rows[0]?.room_id;

@@ -127,8 +127,8 @@ const Users = () => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">User Management</h1>
-          <p className="text-gray-600">Create and manage hostel admin users</p>
+          <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">Managers</h1>
+          <p className="text-gray-600">Create login accounts for people who run each hostel</p>
         </div>
         <button
           onClick={() => {

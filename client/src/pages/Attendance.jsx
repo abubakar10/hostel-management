@@ -139,8 +139,8 @@ const Attendance = () => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">Attendance Tracking</h1>
-          <p className="text-gray-600 dark:text-gray-400">Track daily attendance and monthly reports</p>
+          <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">Attendance</h1>
+          <p className="text-gray-600 dark:text-gray-400">Mark who is present, late, or away today</p>
         </div>
         <div className="flex gap-2">
           <button

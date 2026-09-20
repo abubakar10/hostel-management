@@ -1,7 +1,7 @@
 import express from 'express';
 import { pool } from '../config/database.js';
 import { authenticateToken } from '../middleware/auth.js';
-import { setHostelContext } from '../middleware/hostel.js';
+import { setHostelContext, requireHostelRecord } from '../middleware/hostel.js';
 import { ensurePhotoColumnExists } from '../utils/databaseMigration.js';
 
 const router = express.Router();
@@ -39,7 +39,7 @@ router.get('/', authenticateToken, setHostelContext, async (req, res) => {
 });
 
 // Get staff by ID
-router.get('/:id', authenticateToken, async (req, res) => {
+router.get('/:id', authenticateToken, requireHostelRecord('staff'), async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM staff WHERE id = $1', [req.params.id]);
     
@@ -129,7 +129,7 @@ router.post('/', authenticateToken, setHostelContext, async (req, res) => {
 });
 
 // Update staff
-router.put('/:id', authenticateToken, async (req, res) => {
+router.put('/:id', authenticateToken, requireHostelRecord('staff'), async (req, res) => {
   try {
     // Ensure photo column exists
     await ensurePhotoColumnExists();
@@ -186,7 +186,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
 });
 
 // Delete staff
-router.delete('/:id', authenticateToken, async (req, res) => {
+router.delete('/:id', authenticateToken, requireHostelRecord('staff'), async (req, res) => {
   try {
     await pool.query('DELETE FROM staff WHERE id = $1', [req.params.id]);
     res.json({ message: 'Staff member deleted successfully' });

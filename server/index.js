@@ -36,23 +36,26 @@ const corsOptions = {
     const allowedOrigins = [
       'http://localhost:3000',
       'http://localhost:5173',
-      'https://*.netlify.app',
-      'https://*.vercel.app',
+      'http://127.0.0.1:3000',
       process.env.FRONTEND_URL,
       process.env.NETLIFY_URL
     ].filter(Boolean);
     
-    // Check if origin matches any allowed pattern
     const isAllowed = allowedOrigins.some(allowed => {
       if (allowed.includes('*')) {
-        // Handle wildcard patterns
-        const pattern = allowed.replace('*', '.*');
-        return new RegExp(`^${pattern}$`).test(origin);
+        const escaped = allowed
+          .replace(/[.+?^${}()|[\]\\]/g, '\\$&')
+          .replace('\\*', '[^.]+');
+        return new RegExp(`^${escaped}$`).test(origin);
       }
       return origin === allowed;
     });
+
+    const isKnownHost =
+      /\.netlify\.app$/.test(origin) ||
+      /\.vercel\.app$/.test(origin);
     
-    if (isAllowed || process.env.NODE_ENV === 'development') {
+    if (isAllowed || isKnownHost) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
@@ -64,9 +67,14 @@ const corsOptions = {
 };
 
 // Middleware
+app.disable('x-powered-by');
 app.use(cors(corsOptions));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  next();
+});
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -103,9 +111,7 @@ app.get('/api/health', async (req, res) => {
     res.status(500).json({ 
       status: 'ERROR', 
       message: 'Server is running but database connection failed',
-      database: 'disconnected',
-      error: error.message,
-      code: error.code
+      database: 'disconnected'
     });
   }
 });
@@ -180,7 +186,7 @@ export default app;
 
 // Start server if not in Vercel environment
 if (!process.env.VERCEL) {
-  app.listen(PORT, () => {
+  app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Server running on port ${PORT}`);
     initializeDatabase();
   });

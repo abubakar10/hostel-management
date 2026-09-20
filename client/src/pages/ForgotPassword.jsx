@@ -35,7 +35,7 @@ const ForgotPassword = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-500 to-primary-700 dark:from-primary-600 dark:to-primary-800 flex items-center justify-center p-4 transition-colors duration-200">
+    <div className="min-h-screen bg-cream dark:bg-slate-900 flex items-center justify-center p-4">
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -52,10 +52,10 @@ const ForgotPassword = () => {
             <Mail size={40} className="sm:w-12 sm:h-12 text-primary-600 dark:text-primary-400" />
           </motion.div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">
-            Forgot Password
+            Forgot password
           </h1>
           <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
-            Enter your email or student ID to receive a password reset link
+            Type your email or student ID. We will send a link if that account exists.
           </p>
         </div>
 
@@ -98,7 +98,7 @@ const ForgotPassword = () => {
               disabled={loading}
               className="w-full btn-primary py-3 sm:py-3.5 text-base sm:text-lg min-h-[48px] sm:min-h-[44px] shadow-lg active:scale-95 transition-transform"
             >
-              {loading ? 'Sending...' : 'Send Reset Link'}
+              {loading ? 'Sending…' : 'Send me a reset link'}
             </motion.button>
           </form>
         ) : (

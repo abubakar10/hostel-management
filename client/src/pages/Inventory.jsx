@@ -182,8 +182,8 @@ const Inventory = () => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">Inventory Management</h1>
-          <p className="text-gray-600">Track and manage hostel inventory</p>
+          <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">Stock</h1>
+          <p className="text-gray-600">Keep count of furniture, cleaning items, and kitchen supplies</p>
         </div>
         <button
           onClick={() => {

@@ -1,19 +1,17 @@
 import { useState, useEffect } from 'react'
 import api from '../../config/api'
 import { useAuth } from '../../context/AuthContext'
-import { motion } from 'framer-motion'
-import { 
-  User, 
-  DollarSign, 
-  ClipboardCheck, 
-  AlertCircle, 
+import {
+  User,
+  DollarSign,
+  AlertCircle,
   Calendar,
   TrendingUp,
-  Clock,
   ArrowRightLeft,
   Building2
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import PageHeader from '../../components/PageHeader'
 
 const StudentDashboard = () => {
   const { user } = useAuth()
@@ -40,7 +38,7 @@ const StudentDashboard = () => {
         api.get('/api/student/leaves'),
         api.get('/api/student/profile')
       ])
-      
+
       setProfile(profileRes.data)
 
       const fees = feesRes.data
@@ -48,21 +46,19 @@ const StudentDashboard = () => {
       const complaints = complaintsRes.data
       const leaves = leavesRes.data
 
-      // Calculate fee stats
-      const totalFees = fees.reduce((sum, f) => sum + parseFloat(f.amount || 0), 0)
-      const paidFees = fees.filter(f => f.status === 'paid').reduce((sum, f) => sum + parseFloat(f.amount || 0), 0)
-      const pendingFees = fees.filter(f => f.status === 'pending' || f.status === 'overdue').reduce((sum, f) => sum + parseFloat(f.amount || 0), 0)
-
-      // Calculate attendance stats
-      const presentCount = attendance.filter(a => a.status === 'present').length
-      const absentCount = attendance.filter(a => a.status === 'absent').length
+      const presentCount = attendance.filter((a) => a.status === 'present').length
+      const absentCount = attendance.filter((a) => a.status === 'absent').length
       const attendanceRate = attendance.length > 0 ? Math.round((presentCount / attendance.length) * 100) : 0
 
       setStats({
-        fees: { total: totalFees, pending: pendingFees, paid: paidFees },
+        fees: {
+          total: fees.reduce((sum, f) => sum + parseFloat(f.amount || 0), 0),
+          paid: fees.filter((f) => f.status === 'paid').reduce((sum, f) => sum + parseFloat(f.amount || 0), 0),
+          pending: fees.filter((f) => f.status === 'pending' || f.status === 'overdue').reduce((sum, f) => sum + parseFloat(f.amount || 0), 0)
+        },
         attendance: { present: presentCount, absent: absentCount, rate: attendanceRate },
-        complaints: complaints.filter(c => c.status === 'open' || c.status === 'in_progress').length,
-        leaves: leaves.filter(l => l.status === 'pending').length
+        complaints: complaints.filter((c) => c.status === 'open' || c.status === 'in_progress').length,
+        leaves: leaves.filter((l) => l.status === 'pending').length
       })
     } catch (error) {
       console.error('Error fetching dashboard data:', error)
@@ -80,115 +76,73 @@ const StudentDashboard = () => {
   }
 
   const statCards = [
-    {
-      label: 'Pending Fees',
-      value: `RS ${stats.fees.pending.toLocaleString()}`,
-      icon: DollarSign,
-      color: 'bg-yellow-500',
-      link: '/student/fees'
-    },
-    {
-      label: 'Attendance Rate',
-      value: `${stats.attendance.rate}%`,
-      icon: TrendingUp,
-      color: 'bg-green-500',
-      link: '/student/attendance'
-    },
-    {
-      label: 'Active Complaints',
-      value: stats.complaints,
-      icon: AlertCircle,
-      color: 'bg-red-500',
-      link: '/student/complaints'
-    },
-    {
-      label: 'Pending Leaves',
-      value: stats.leaves,
-      icon: Calendar,
-      color: 'bg-blue-500',
-      link: '/student/leaves'
-    }
+    { label: 'Still to pay', value: `RS ${stats.fees.pending.toLocaleString()}`, hint: 'Pay at the hostel office', icon: DollarSign, color: 'bg-amber-600', link: '/student/fees' },
+    { label: 'Days you were present', value: `${stats.attendance.rate}%`, hint: 'Your attendance so far', icon: TrendingUp, color: 'bg-emerald-600', link: '/student/attendance' },
+    { label: 'Open problems', value: stats.complaints, hint: 'Things you reported', icon: AlertCircle, color: 'bg-red-600', link: '/student/complaints' },
+    { label: 'Leave waiting', value: stats.leaves, hint: 'Waiting for a yes or no', icon: Calendar, color: 'bg-primary-600', link: '/student/leaves' }
   ]
 
   return (
-    <div className="space-y-4 sm:space-y-6">
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-gray-100 mb-1 sm:mb-2">
-          Welcome back, {user?.first_name}!
-        </h1>
-        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-          <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
-            Here's your dashboard overview
-          </p>
-          {profile?.hostel_name && (
-            <div className="flex items-center gap-2 text-sm sm:text-base">
-              <Building2 size={16} className="text-primary-600 dark:text-primary-400" />
-              <span className="text-gray-700 dark:text-gray-300 font-medium">
-                {profile.hostel_name}
-              </span>
-            </div>
-          )}
-        </div>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        title={`Hello, ${user?.first_name || 'there'}`}
+        subtitle={
+          profile?.hostel_name
+            ? `You live at ${profile.hostel_name}. Check payments, ask for leave, or report a problem from here.`
+            : 'Check payments, ask for leave, or report a problem from here.'
+        }
+      />
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-        {statCards.map((stat, index) => {
+      {profile?.hostel_name && (
+        <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+          <Building2 size={16} className="text-primary-700" />
+          {profile.hostel_name}
+          {profile.room_number ? ` · Room ${profile.room_number}` : ''}
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {statCards.map((stat) => {
           const Icon = stat.icon
           return (
-            <motion.div
+            <button
               key={stat.label}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05 }}
-              className="card hover:scale-105 transition-transform duration-200 cursor-pointer"
               onClick={() => navigate(stat.link)}
+              className="card text-left"
             >
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-gray-600 dark:text-gray-400 text-sm mb-1">{stat.label}</p>
-                  <p className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-gray-100">{stat.value}</p>
+                  <p className="text-slate-500 text-sm mb-1">{stat.label}</p>
+                  <p className="text-2xl font-semibold text-slate-800 dark:text-slate-100">{stat.value}</p>
+                  <p className="text-xs text-slate-400 mt-1">{stat.hint}</p>
                 </div>
-                <div className={`${stat.color} p-3 sm:p-4 rounded-full`}>
-                  <Icon size={20} className="sm:w-6 sm:h-6 text-white" />
+                <div className={`${stat.color} p-3 rounded-2xl`}>
+                  <Icon size={20} className="text-white" />
                 </div>
               </div>
-            </motion.div>
+            </button>
           )
         })}
       </div>
 
-      {/* Quick Actions */}
       <div className="card">
-        <h2 className="text-lg sm:text-xl font-semibold text-gray-800 dark:text-gray-100 mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          <button
-            onClick={() => navigate('/student/complaints')}
-            className="btn-secondary text-left p-4 flex items-center gap-3"
-          >
+        <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-4">What do you need?</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <button onClick={() => navigate('/student/complaints')} className="btn-secondary text-left p-4 flex items-center gap-3">
             <AlertCircle size={20} />
-            <span>Submit Complaint</span>
+            Report a problem
           </button>
-          <button
-            onClick={() => navigate('/student/leaves')}
-            className="btn-secondary text-left p-4 flex items-center gap-3"
-          >
+          <button onClick={() => navigate('/student/leaves')} className="btn-secondary text-left p-4 flex items-center gap-3">
             <Calendar size={20} />
-            <span>Apply for Leave</span>
+            Ask for leave
           </button>
-          <button
-            onClick={() => navigate('/student/room-transfers')}
-            className="btn-secondary text-left p-4 flex items-center gap-3"
-          >
+          <button onClick={() => navigate('/student/room-transfers')} className="btn-secondary text-left p-4 flex items-center gap-3">
             <ArrowRightLeft size={20} />
-            <span>Request Room Transfer</span>
+            Ask to change room
           </button>
-          <button
-            onClick={() => navigate('/student/profile')}
-            className="btn-secondary text-left p-4 flex items-center gap-3"
-          >
+          <button onClick={() => navigate('/student/profile')} className="btn-secondary text-left p-4 flex items-center gap-3">
             <User size={20} />
-            <span>View Profile</span>
+            See my details
           </button>
         </div>
       </div>
@@ -197,4 +151,3 @@ const StudentDashboard = () => {
 }
 
 export default StudentDashboard
-

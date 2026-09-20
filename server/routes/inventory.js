@@ -1,7 +1,7 @@
 import express from 'express';
 import { pool } from '../config/database.js';
 import { authenticateToken } from '../middleware/auth.js';
-import { setHostelContext } from '../middleware/hostel.js';
+import { setHostelContext, requireHostelRecord } from '../middleware/hostel.js';
 
 const router = express.Router();
 
@@ -37,7 +37,7 @@ router.get('/', authenticateToken, setHostelContext, async (req, res) => {
 });
 
 // Get inventory item by ID
-router.get('/:id', authenticateToken, async (req, res) => {
+router.get('/:id', authenticateToken, requireHostelRecord('inventory'), async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM inventory WHERE id = $1', [req.params.id]);
     
@@ -122,7 +122,7 @@ router.post('/', authenticateToken, setHostelContext, async (req, res) => {
 });
 
 // Update inventory item
-router.put('/:id', authenticateToken, async (req, res) => {
+router.put('/:id', authenticateToken, requireHostelRecord('inventory'), async (req, res) => {
   try {
     const {
       item_name, category, quantity, unit, location, condition,
@@ -193,7 +193,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
 });
 
 // Delete inventory item
-router.delete('/:id', authenticateToken, async (req, res) => {
+router.delete('/:id', authenticateToken, requireHostelRecord('inventory'), async (req, res) => {
   try {
     await pool.query('DELETE FROM inventory WHERE id = $1', [req.params.id]);
     res.json({ message: 'Inventory item deleted successfully' });

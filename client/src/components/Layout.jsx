@@ -23,11 +23,11 @@ const Layout = () => {
   }, [location.pathname])
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
+    <div className="min-h-screen bg-cream dark:bg-slate-900">
       <Header onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
       <div className="flex relative overflow-hidden">
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-        <main className="flex-1 p-3 sm:p-4 md:p-6 lg:p-8 w-full min-w-0 max-w-full transition-all duration-300 overflow-x-hidden lg:ml-64">
+        <main className="flex-1 p-3 sm:p-4 md:p-6 lg:p-8 w-full min-w-0 max-w-full transition-all duration-300 overflow-x-hidden md:ml-64">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -38,13 +38,10 @@ const Layout = () => {
           >
             {showSelectHostel ? (
               <div className="flex flex-col items-center justify-center min-h-[60vh] px-4">
-                <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-8 max-w-md text-center">
-                  <h2 className="text-xl font-bold text-amber-800 dark:text-amber-200 mb-2">Select a Hostel</h2>
-                  <p className="text-amber-700 dark:text-amber-300 mb-4">
-                    Please select a hostel from the dropdown in the header to view data for that specific hostel.
-                  </p>
-                  <p className="text-sm text-amber-600 dark:text-amber-400">
-                    All stats and details on this page will be filtered by the selected hostel.
+                <div className="bg-white dark:bg-slate-800 border border-amber-200 dark:border-amber-800 rounded-2xl p-8 max-w-md text-center">
+                  <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-100 mb-2">Choose a hostel first</h2>
+                  <p className="text-slate-600 dark:text-slate-300 mb-2">
+                    You look after more than one hostel. Pick one from the top of the screen, then this page will show that hostel only.
                   </p>
                 </div>
               </div>
@@ -55,7 +52,7 @@ const Layout = () => {
         </main>
         {sidebarOpen && (
           <div
-            className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+            className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
             onClick={() => setSidebarOpen(false)}
           />
         )}

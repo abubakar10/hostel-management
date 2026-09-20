@@ -1,32 +1,34 @@
-import jwt from 'jsonwebtoken';
+import { pool } from '../config/database.js';
+import { verifyToken } from '../utils/jwt.js';
 
 export const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 
   if (!token) {
-    return res.status(401).json({ error: 'Access token required' });
+    return res.status(401).json({ error: 'Please sign in to continue' });
   }
 
-  jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret_key_here', async (err, decoded) => {
-    if (err) {
-      return res.status(403).json({ error: 'Invalid or expired token' });
+  try {
+    const decoded = verifyToken(token);
+
+    if (decoded.typ === 'student' || decoded.role === 'student' || decoded.studentData) {
+      return res.status(403).json({ error: 'This page is for hostel staff only' });
     }
-    
-    // Fetch full user data including hostel_id
-    try {
-      const { pool } = await import('../config/database.js');
-      const result = await pool.query('SELECT id, username, email, role, hostel_id FROM users WHERE id = $1', [decoded.id]);
-      
+
+    pool.query(
+      'SELECT id, username, email, role, hostel_id FROM users WHERE id = $1',
+      [decoded.id]
+    ).then((result) => {
       if (result.rows.length === 0) {
-        return res.status(403).json({ error: 'User not found' });
+        return res.status(403).json({ error: 'Account not found. Please sign in again.' });
       }
-      
       req.user = result.rows[0];
       next();
-    } catch (error) {
-      return res.status(500).json({ error: 'Error fetching user data' });
-    }
-  });
+    }).catch(() => {
+      return res.status(500).json({ error: 'Could not check your account. Please try again.' });
+    });
+  } catch (err) {
+    return res.status(401).json({ error: 'Your session expired. Please sign in again.' });
+  }
 };
-
